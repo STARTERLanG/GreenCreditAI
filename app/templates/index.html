@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GreenCredit AI</title>
+    <title>绿色信贷智能助手</title>
+    <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg">
     <!-- CDN Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -16,8 +17,11 @@
 <body class="flex h-screen overflow-hidden text-gray-800">
 
     <!-- Sidebar (浅绿莫兰迪风格) -->
-    <aside id="sidebar" class="w-[280px] bg-[#e9f3ed] border-r border-[#d1e2da] text-[#2d4a43] flex flex-col transition-all duration-300 ease-in-out relative group z-30">
+    <aside id="sidebar" class="w-[250px] bg-[#e9f3ed] border-r border-[#d1e2da] text-[#2d4a43] flex flex-col relative group z-30 sidebar-content" style="width: 250px;">
         
+        <!-- Resizer Handle -->
+        <div id="sidebar-resizer" class="resizer"></div>
+
         <!-- Toggle Button -->
         <button id="sidebar-toggle" class="absolute -right-3 top-9 bg-white border border-[#d1e2da] shadow-sm rounded-full p-1 text-[#2d4a43]/60 hover:text-emerald-600 transition-all z-50 opacity-0 group-hover:opacity-100 scale-90 hover:scale-100">
             <i class="fas fa-chevron-left text-xs transition-transform duration-300" id="toggle-icon"></i>
@@ -107,6 +111,18 @@
             </div>
         </div>
     </main>
+
+    <!-- Rename Modal -->
+    <div id="rename-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 transform scale-95 transition-transform duration-200" id="modal-content">
+            <h3 class="text-lg font-bold text-slate-800 mb-4">重命名会话</h3>
+            <input type="text" id="rename-input" class="w-full border border-slate-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-6 text-slate-700" placeholder="输入新标题..." autocomplete="off">
+            <div class="flex justify-end space-x-3">
+                <button id="cancel-rename-btn" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 font-medium transition-colors">取消</button>
+                <button id="confirm-rename-btn" class="px-6 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium shadow-md transition-all active:scale-95">确定</button>
+            </div>
+        </div>
+    </div>
 
     <!-- App Logic -->
     <script src="/static/js/app.js"></script>

@@ -137,3 +137,35 @@ button:focus {
 .icon-pop {
     animation: pop 0.2s ease-out forwards;
 }
+
+/* 8. 侧边栏拖拽把手 */
+.resizer {
+    position: absolute;
+    top: 0;
+    right: -3px; /* 居中于边框 */
+    width: 6px;  /* 热区宽度：足够点到但不过宽 */
+    height: 100%;
+    cursor: col-resize;
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+}
+
+/* 视觉上的细线 */
+.resizer::after {
+    content: "";
+    width: 2px;
+    height: 100%;
+    background-color: transparent;
+    transition: background-color 0.2s;
+}
+
+.resizer:hover::after, 
+.resizer.resizing::after {
+    background-color: #10b981; /* 莫兰迪绿细线 */
+}
+
+/* 禁止侧边栏内容在拖拽时被选中 */
+.sidebar-content {
+    user-select: none;
+}

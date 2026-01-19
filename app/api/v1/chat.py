@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select
-from app.schemas.chat import ChatRequest
+from app.schemas.chat import ChatRequest, UpdateSessionRequest
 from app.services.workflow_engine import workflow_engine
 from app.services.session_service import session_service
 from app.core.db import engine
@@ -11,21 +11,13 @@ router = APIRouter()
 
 @router.get("/sessions")
 async def list_sessions():
-    """获取会话列表 (仅返回非空会话或最近创建的)"""
+    """获取会话列表"""
     with Session(engine) as session:
         # 按更新时间倒序
         statement = select(ChatSession).order_by(ChatSession.updated_at.desc())
         results = session.exec(statement).all()
-        # 简单过滤：实际生产中建议在 SQL 层过滤，这里在 Python 层处理
-        valid_sessions = []
-        for s in results:
-            if s.history and s.history != "[]":
-                valid_sessions.append({"id": s.id, "title": s.title, "updated_at": s.updated_at})
-            # 保留最近一个即使为空的会话（方便调试）
-            elif len(valid_sessions) == 0: 
-                 valid_sessions.append({"id": s.id, "title": s.title, "updated_at": s.updated_at})
-                 
-        return valid_sessions
+        
+        return [{"id": s.id, "title": s.title, "updated_at": s.updated_at} for s in results]
 
 @router.get("/sessions/{session_id}")
 async def get_session_history(session_id: str):
@@ -39,6 +31,33 @@ async def get_session_history(session_id: str):
         "title": session_data.title,
         "history": json.loads(session_data.history)
     }
+
+@router.delete("/sessions/{session_id}")
+async def delete_session(session_id: str):
+    """删除会话"""
+    with Session(engine) as session:
+        chat_session = session.get(ChatSession, session_id)
+        if not chat_session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        session.delete(chat_session)
+        session.commit()
+    return {"status": "success"}
+
+@router.patch("/sessions/{session_id}")
+async def update_session(session_id: str, payload: UpdateSessionRequest):
+    """重命名会话"""
+    with Session(engine) as session:
+        chat_session = session.get(ChatSession, session_id)
+        if not chat_session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        chat_session.title = payload.title
+        session.add(chat_session)
+        session.commit()
+        session.refresh(chat_session) # 刷新以获取最新状态
+        # 在 session 作用域内提取需要的数据
+        new_title = chat_session.title
+        
+    return {"status": "success", "title": new_title}
 
 @router.post("/completions")
 async def chat_completions(request: ChatRequest):

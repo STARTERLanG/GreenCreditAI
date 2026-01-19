@@ -19,6 +19,15 @@ class ChatResponse(BaseModel):
     intent: Optional[IntentType] = None
 
 class StreamEvent(BaseModel):
+
     """流式响应事件结构"""
+
     event: Literal["think", "token", "error", "done"]
+
     payload: str
+
+
+
+class UpdateSessionRequest(BaseModel):
+
+    title: str
