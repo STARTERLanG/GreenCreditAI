@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GreenCredit AI</title>
+    <!-- CDN Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="/static/css/style.css" rel="stylesheet">
+</head>
+<body class="flex h-screen overflow-hidden text-gray-800">
+
+    <!-- Sidebar (浅绿莫兰迪风格) -->
+    <aside id="sidebar" class="w-[280px] bg-[#e9f3ed] border-r border-[#d1e2da] text-[#2d4a43] flex flex-col transition-all duration-300 ease-in-out relative group z-30">
+        
+        <!-- Toggle Button -->
+        <button id="sidebar-toggle" class="absolute -right-3 top-9 bg-white border border-[#d1e2da] shadow-sm rounded-full p-1 text-[#2d4a43]/60 hover:text-emerald-600 transition-all z-50 opacity-0 group-hover:opacity-100 scale-90 hover:scale-100">
+            <i class="fas fa-chevron-left text-xs transition-transform duration-300" id="toggle-icon"></i>
+        </button>
+
+        <!-- Brand Header -->
+        <div class="h-20 flex items-center px-6 flex-shrink-0">
+            <img src="/static/img/logo.svg" class="w-9 h-9 shadow-sm rounded-lg" alt="Logo">
+            <span class="ml-3 text-lg font-bold text-[#1a302a] tracking-tight whitespace-nowrap overflow-hidden sidebar-text">GreenCredit</span>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="px-4 mb-4 flex items-center gap-2">
+            <button id="new-chat-btn" class="flex-1 bg-white hover:bg-emerald-50 text-emerald-700 font-semibold py-2.5 px-4 rounded-xl shadow-sm border border-[#d1e2da] transition-all flex items-center justify-center space-x-2 group/btn overflow-hidden active:scale-95">
+                <i class="fas fa-plus text-xs"></i>
+                <span class="text-sm whitespace-nowrap sidebar-text">New Chat</span>
+            </button>
+            
+            <button id="search-btn" class="w-10 h-10 flex-shrink-0 bg-white/50 hover:bg-white border border-[#d1e2da] text-[#2d4a43]/60 hover:text-emerald-600 rounded-xl transition-all flex items-center justify-center sidebar-text active:scale-95" title="搜索历史">
+                <i class="fas fa-search text-sm"></i>
+            </button>
+        </div>
+
+        <!-- History Title -->
+        <div class="px-6 py-3 text-[10px] font-bold text-emerald-600/60 uppercase tracking-wider sidebar-text">
+            History
+        </div>
+
+        <!-- Session List -->
+        <div id="session-list" class="flex-1 overflow-y-auto px-3 space-y-1 scrollbar-thin">
+            <!-- Inject via JS -->
+        </div>
+
+        <!-- Bottom User Info -->
+        <div class="p-4 border-t border-[#d1e2da]">
+            <div class="flex items-center space-x-3 px-2 py-2 rounded-xl hover:bg-white/50 cursor-pointer transition-colors overflow-hidden">
+                <div class="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-bold shadow-sm flex-shrink-0">
+                    GC
+                </div>
+                <div class="text-sm text-[#2d4a43] whitespace-nowrap sidebar-text">
+                    <div class="font-medium">Admin User</div>
+                    <div class="text-[10px] text-emerald-600 font-medium">Pro Plan</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col bg-white relative h-full">
+        <!-- Top Bar (Mobile) -->
+        <div class="md:hidden h-14 border-b flex items-center px-4 justify-between bg-white z-20">
+            <span class="font-bold text-lg">GreenCredit</span>
+            <button class="text-gray-500"><i class="fas fa-bars"></i></button>
+        </div>
+
+        <!-- Chat Area -->
+        <div id="chat-window" class="flex-1 overflow-y-auto scroll-smooth pb-40 pt-10 px-4">
+            <!-- Dynamic Content -->
+        </div>
+
+        <!-- Bottom Input Area (Fixed) -->
+        <div class="absolute bottom-0 left-0 w-full bg-white/90 backdrop-blur pb-6 pt-2 px-4">
+            <div class="max-w-3xl mx-auto">
+                <div class="relative bg-gray-100 rounded-[28px] hover:bg-gray-200/80 focus-within:bg-white focus-within:ring-2 focus-within:ring-gray-200 transition-all duration-200 shadow-sm border border-transparent focus-within:border-gray-300 input-glow">
+                    <!-- File Upload -->
+                    <input type="file" id="file-upload" class="hidden" accept=".pdf,.xlsx,.xls,.docx,.txt">
+                    <button id="upload-btn" class="absolute left-3 bottom-3 p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-full" title="上传文件">
+                        <i class="fas fa-plus-circle text-xl"></i>
+                    </button>
+
+                    <!-- Text Input -->
+                    <textarea id="user-input" rows="1"
+                        class="w-full bg-transparent border-none focus:ring-0 text-gray-700 placeholder-gray-500 pl-14 pr-14 py-4 resize-none max-h-48 overflow-y-auto leading-relaxed"
+                        placeholder="Enter a prompt here"
+                        style="min-height: 56px;"></textarea>
+
+                    <!-- Send Button -->
+                    <button id="send-btn" class="absolute right-3 bottom-3 p-2 bg-transparent text-gray-400 hover:text-emerald-600 disabled:opacity-30 transition-colors rounded-full">
+                        <i class="fas fa-paper-plane text-lg"></i>
+                    </button>
+                </div>
+                <div class="text-center mt-3">
+                    <p class="text-[11px] text-gray-400">
+                        GreenCredit AI can make mistakes. Consider checking important information.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- App Logic -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
