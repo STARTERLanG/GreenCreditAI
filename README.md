@@ -35,21 +35,21 @@
 
 ```mermaid
 graph TD
-    User(用户) -->|HTTP/SSE| API[FastAPI 服务]
-    API -->|Prompt| Router[L1 路由 (Qwen-Turbo)]
+    User["User (用户)"] -->|HTTP/SSE| API["API (FastAPI 服务)"]
+    API -->|Prompt| Router["Router (L1 路由 Qwen-Turbo)"]
     
-    Router -->|General Chat| LLM_Small[小模型回复]
-    Router -->|Policy Query| RAG[L2 政策专家]
-    Router -->|Doc Analysis| Analyst[L2 文档分析师]
+    Router -->|General Chat| LLM_Small["Small Model (闲聊回复)"]
+    Router -->|Policy Query| RAG["Policy Expert (L2 政策专家)"]
+    Router -->|Doc Analysis| Analyst["Doc Analyst (L2 文档分析师)"]
     
     subgraph "Knowledge Base (RAG)"
-    RAG -->|Search| Qdrant[(Qdrant Vector DB)]
+    RAG -->|Search| Qdrant[("Qdrant Vector DB")]
     Qdrant -->|Context| RAG
     end
     
     subgraph "Document Processing"
-    Analyst -->|Parse| Parsers[PDF/Excel/Word Parsers]
-    Parsers -->|Cache| SQLite[(SQLite DB)]
+    Analyst -->|Parse| Parsers["Parsers (PDF/Excel/Word)"]
+    Parsers -->|Cache| SQLite[("SQLite DB")]
     end
     
     LLM_Small --> API
