@@ -8,6 +8,7 @@ class UploadResponse(BaseModel):
     filename: str
     status: str
     message: str
+    file_hash: str # 新增
 
 @router.post("/upload", response_model=UploadResponse)
 async def upload_file(file: UploadFile = File(...)):
@@ -15,21 +16,20 @@ async def upload_file(file: UploadFile = File(...)):
     上传文件并解析内容 (带数据库缓存去重)
     """
     try:
-        # 处理文件 (包含 Hash 计算、查库缓存、解析逻辑)
-        content = await document_service.process_file(file)
+        # 调整：process_file 现在应该返回 (content, hash)
+        content, file_hash = await document_service.process_file(file)
         
-        # 3. 缓存内容 (覆盖式，简单模拟 "当前上下文")
-        # 注意：这里依然使用简单的内存字典作为会话上下文，
-        # 下一步可以将 content 存入 chat_sessions 表
-        UPLOAD_CACHE["latest"] = {
-            "filename": file.filename,
-            "content": content
+        # 缓存内容
+        UPLOAD_CACHE[file_hash] = {
+            "content": content,
+            "filename": file.filename
         }
         
         return UploadResponse(
-            filename=file.filename if file.filename else "unknown",
+            filename=file.filename,
             status="success",
-            message=f"文件处理完成（已缓存），共 {len(content)} 字符，可进行分析。"
+            message=f"文件处理完成，共 {len(content)} 字符。",
+            file_hash=file_hash
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

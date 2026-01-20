@@ -30,7 +30,7 @@
         <!-- Brand Header -->
         <div class="h-20 flex items-center px-6 flex-shrink-0">
             <img src="/static/img/logo.svg" class="w-9 h-9 shadow-sm rounded-lg" alt="Logo">
-            <span class="ml-3 text-lg font-bold text-[#1a302a] tracking-tight whitespace-nowrap overflow-hidden sidebar-text">GreenCredit</span>
+            <span class="ml-3 text-lg font-bold text-[#1a302a] tracking-tight whitespace-nowrap overflow-hidden sidebar-text">绿色信贷智能助手</span>
         </div>
 
         <!-- Action Bar -->
@@ -85,9 +85,14 @@
         <!-- Bottom Input Area (Fixed) -->
         <div class="absolute bottom-0 left-0 w-full bg-white/90 backdrop-blur pb-6 pt-2 px-4">
             <div class="max-w-3xl mx-auto">
+                <!-- Pending File Area (Moved Outside & Re-styled) -->
+                <div id="pending-file-zone" class="flex flex-wrap gap-3 mb-3 px-4 hidden">
+                    <!-- Cards will be injected here -->
+                </div>
+
                 <div class="relative bg-gray-100 rounded-[28px] hover:bg-gray-200/80 focus-within:bg-white focus-within:ring-2 focus-within:ring-gray-200 transition-all duration-200 shadow-sm border border-transparent focus-within:border-gray-300 input-glow">
                     <!-- File Upload -->
-                    <input type="file" id="file-upload" class="hidden" accept=".pdf,.xlsx,.xls,.docx,.txt">
+                    <input type="file" id="file-upload" class="hidden" accept=".pdf,.xlsx,.xls,.docx,.txt" multiple>
                     <button id="upload-btn" class="absolute left-3 bottom-3 p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-full" title="上传文件">
                         <i class="fas fa-plus-circle text-xl"></i>
                     </button>
@@ -120,6 +125,21 @@
             <div class="flex justify-end space-x-3">
                 <button id="cancel-rename-btn" class="px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 font-medium transition-colors">取消</button>
                 <button id="confirm-rename-btn" class="px-6 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-medium shadow-md transition-all active:scale-95">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-200">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 transform scale-95 transition-transform duration-200" id="delete-modal-content">
+            <div class="w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4 mx-auto text-xl">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800 mb-2 text-center" id="delete-modal-title">删除会话</h3>
+            <p class="text-sm text-slate-500 mb-6 text-center" id="delete-modal-desc">您确定要删除这个会话吗？此操作无法撤销，所有聊天记录都将丢失。</p>
+            <div class="flex justify-center space-x-3">
+                <button id="cancel-delete-btn" class="flex-1 px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 font-medium transition-colors">取消</button>
+                <button id="confirm-delete-btn" class="flex-1 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white font-medium shadow-md transition-all active:scale-95">确认删除</button>
             </div>
         </div>
     </div>

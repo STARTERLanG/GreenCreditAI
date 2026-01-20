@@ -9,9 +9,8 @@ from app.core.db import engine
 from app.models.file import FileParsingCache
 from app.parsers import parse_file
 
-# 简单的内存缓存，用于在对话中暂存最近上传的文件内容
-# Key: filename, Value: content
-# 注意：生产环境应使用 Redis 配合 SessionID
+# 简单的内存缓存
+# Key: file_hash, Value: {"content": str, "filename": str}
 UPLOAD_CACHE = {}
 
 class DocumentService:
@@ -51,7 +50,7 @@ class DocumentService:
                     # 如果需要，可以将临时文件重命名为正式文件 (可选)
                     # 清理临时文件
                     temp_path.unlink()
-                    return cached_file.content
+                    return cached_file.content, file_hash
 
                 # 4. Cache Miss: 解析内容
                 logger.info("Cache MISS. Parsing file...")
@@ -76,7 +75,7 @@ class DocumentService:
                 else:
                     temp_path.unlink()
                 
-                return content
+                return content, file_hash
 
         finally:
             file.file.close()

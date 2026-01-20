@@ -23,13 +23,15 @@ class SummarizerAgent:
 
         self.chain = prompt | self.llm | StrOutputParser()
 
-    async def generate_title(self, user_input: str) -> str:
+    async def generate_title(self, user_input: str, context: str = "") -> str:
         """生成会话标题"""
         try:
-            # 截取前 200 字符足够生成标题了
-            safe_input = user_input[:200]
+            # 组装更丰富的素材
+            input_text = f"用户提问: {user_input}\n其他上下文: {context}"
+            safe_input = input_text[:300]
+            
             title = await self.chain.ainvoke({"input": safe_input})
-            clean_title = title.strip().replace('"', '').replace('《', '').replace('》', '')
+            clean_title = title.strip().replace('"', '').replace('《', '').replace('》', '').replace(' ', '')
             logger.info(f"Generated title: {clean_title}")
             return clean_title
         except Exception as e:

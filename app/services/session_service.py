@@ -1,6 +1,7 @@
 import json
 from uuid import uuid4
 from sqlmodel import Session
+from langchain_core.messages import HumanMessage, AIMessage
 from app.core.db import engine
 from app.models.session import ChatSession
 from app.core.logging import logger
@@ -12,7 +13,7 @@ class SessionService:
             new_session = ChatSession(
                 id=str(uuid4()),
                 title=title,
-                history="[]" # 初始为空列表
+                history="[]"
             )
             session.add(new_session)
             session.commit()
@@ -23,6 +24,28 @@ class SessionService:
         """获取会话详情"""
         with Session(engine) as session:
             return session.get(ChatSession, session_id)
+
+    def get_chat_history(self, session_id: str, limit: int = 10) -> list:
+        """获取 LangChain 格式的最近历史记录"""
+        session_data = self.get_session(session_id)
+        if not session_data or not session_data.history:
+            return []
+        
+        try:
+            raw_history = json.loads(session_data.history)
+            # 取最近 limit 条
+            recent_history = raw_history[-limit:]
+            
+            messages = []
+            for msg in recent_history:
+                if msg["role"] == "user":
+                    messages.append(HumanMessage(content=msg["content"]))
+                elif msg["role"] == "assistant":
+                    messages.append(AIMessage(content=msg["content"]))
+            return messages
+        except Exception as e:
+            logger.error(f"Error parsing history for session {session_id}: {e}")
+            return []
 
     def append_message(self, session_id: str, role: str, content: str):
         """追加消息到历史记录 (如果会话不存在则自动创建)"""
