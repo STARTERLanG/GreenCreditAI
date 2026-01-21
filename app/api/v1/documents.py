@@ -2,7 +2,6 @@ from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
 from app.services.document_service import document_service, UPLOAD_CACHE
 from pydantic import BaseModel
-from pathlib import Path
 
 router = APIRouter()
 
@@ -66,7 +65,7 @@ async def get_document_content(file_hash: str):
         return {"content": UPLOAD_CACHE[file_hash]["content"]}
     
     # 缓存没有，查数据库
-    from sqlmodel import Session, select
+    from sqlmodel import Session
     from app.core.db import engine
     from app.models.file import FileParsingCache
     

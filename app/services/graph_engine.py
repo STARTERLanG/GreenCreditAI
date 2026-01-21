@@ -27,7 +27,8 @@ def create_base_graph():
     workflow.add_edge("extractor", "auditor")
 
     def audit_decision(state: GreenCreditState):
-        if state.get("is_completed"): return END
+        if state.get("is_completed"):
+            return END
         return "enrichment"
 
     workflow.add_conditional_edges("auditor", audit_decision, {"enrichment": "enrichment", END: END})

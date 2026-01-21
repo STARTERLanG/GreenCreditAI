@@ -2,7 +2,7 @@ from app.services.graph_engine import create_base_graph
 from app.services.session_service import session_service
 from app.services.document_service import UPLOAD_CACHE
 from app.agents.summarizer import summarizer_agent
-from app.schemas.chat import ChatRequest, IntentType
+from app.schemas.chat import ChatRequest
 from app.core.logging import logger
 from langgraph.checkpoint.memory import MemorySaver 
 import json
@@ -96,7 +96,8 @@ class WorkflowEngine:
                     context = f"文件名: {', '.join(file_names)}" if file_names else ""
                     new_title = await summarizer_agent.generate_title(user_input, context=context)
                     session_service.update_title(session_id, new_title)
-                except: pass
+                except Exception:
+                    pass
 
         except Exception as e:
             logger.error(f"Workflow Error: {e}")

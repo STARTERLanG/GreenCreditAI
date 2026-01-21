@@ -6,8 +6,6 @@ from app.core.config import settings
 from app.core.logging import logger
 from app.core.db import init_db
 from app.api.v1 import api_router
-from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
-from app.services.graph_engine import create_base_graph
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

@@ -4,7 +4,8 @@ from qdrant_client.http.models import Distance, VectorParams
 from langchain_community.embeddings import DashScopeEmbeddings
 from tenacity import retry, stop_after_attempt, wait_fixed
 import time
-from typing import List
+import asyncio
+from typing import List, Any
 from app.core.config import settings
 from app.core.logging import logger
 
@@ -23,145 +24,74 @@ class LoggingDashScopeEmbeddings(DashScopeEmbeddings):
             raise e
 
 class VectorStoreService:
-
     def __init__(self):
-
         self.persist_directory = str(settings.VECTOR_DB_PERSIST_DIR)
-
         self.collection_name = "policy_kb"
-
         self._client = None
-
         self._db = None
-
         self._embeddings = None
 
-
-
     @property
-
     def embeddings(self):
-
         if self._embeddings is None:
-
             self._embeddings = LoggingDashScopeEmbeddings(
-
                 model="text-embedding-v3",
-
                 dashscope_api_key=settings.DASHSCOPE_API_KEY
-
             )
-
         return self._embeddings
 
-
-
     def initialize(self):
-
         """延迟初始化，避免模块导入时锁定文件"""
-
         if self._client:
-
             return
-
-
 
         logger.info(f"Connecting to Qdrant (Local) at {self.persist_directory}...")
-
         self._client = QdrantClient(path=self.persist_directory)
-
         
-
-        # 3.1 确保 Collection 存在
-
         if not self._client.collection_exists(self.collection_name):
-
             logger.info(f"Collection '{self.collection_name}' not found. Creating...")
-
             self._client.create_collection(
-
                 collection_name=self.collection_name,
-
                 vectors_config=VectorParams(size=1024, distance=Distance.COSINE)
-
             )
-
         
-
-        # 4. 初始化 LangChain 包装器
-
         self._db = QdrantVectorStore(
-
             client=self._client,
-
             collection_name=self.collection_name,
-
             embedding=self.embeddings,
-
         )
 
-
-
     @property
-
     def db(self) -> QdrantVectorStore:
-
         """获取数据库实例，如果未初始化则自动初始化"""
-
         if self._db is None:
-
             self.initialize()
-
         return self._db
 
-
-
-    @retry(
-
-        stop=stop_after_attempt(3), 
-
-        wait=wait_fixed(2),
-
-        reraise=True
-
-    )
-
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(2), reraise=True)
     def add_documents(self, documents):
-
         """将文档列表添加到向量库"""
-
         if not documents:
-
             return
-
-        
-
         logger.debug(f"[DB] 准备写入 {len(documents)} 个文档片段到 Qdrant...")
-
         try:
-
             self.db.add_documents(documents=documents)
-
             logger.debug("[DB] 写入成功")
-
         except Exception as e:
-
             logger.error(f"[DB] 写入失败，准备重试。错误详情: {e}")
-
             raise e
 
-
-
     def search(self, query: str, k: int = 4):
-
-        """语义检索"""
-
+        """同步语义检索"""
         logger.info(f"Searching for: {query}")
-
         return self.db.similarity_search(query, k=k)
 
+    async def asearch(self, query: str, k: int = 4) -> List[Any]:
+        """异步语义检索 (在线程池中运行同步操作)"""
+        logger.info(f"[Async] Searching for: {query}")
+        # 由于 Qdrant 本地客户端和 embed_query 都是同步阻塞的，必须放到线程池
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, lambda: self.search(query, k))
 
-
-# 单例
-
-vector_service = VectorStoreService()
+# 单例导出
+vector_store = VectorStoreService()

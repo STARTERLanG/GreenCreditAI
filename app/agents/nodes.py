@@ -1,11 +1,14 @@
 import json
 import re
-
 from typing import Dict, Any
+from langchain_core.messages import HumanMessage, SystemMessage
+from langgraph.prebuilt import create_react_agent
 from app.agents.router import router_agent
 from app.services.llm_factory import llm_factory
 from app.schemas.state import GreenCreditState
 from app.core.logging import logger
+from app.tools.rag_tool import search_green_policy
+from app.core.prompts import Prompts
 
 async def router_node(state: GreenCreditState) -> Dict[str, Any]:
     """判定意图：是闲聊还是在办业务（查政策/投项目）"""
@@ -13,7 +16,6 @@ async def router_node(state: GreenCreditState) -> Dict[str, Any]:
     history = session_service.get_chat_history(state["session_id"], limit=3)
     intent = await router_agent.route(state["user_query"], chat_history=history)
     return {"current_intent": intent.value}
-
 
 def extract_json(text: str) -> dict:
     """从文本中提取并解析 JSON 块"""
@@ -49,19 +51,7 @@ async def extractor_node(state: GreenCreditState) -> Dict[str, Any]:
     
     logger.info(f"[Extractor] Processing documents. Total length: {len(all_docs_content)}")
 
-    prompt = f"""你是一个信贷预审员。请从以下文档内容中提取核心信息。
-要求：
-1. 必须以 JSON 格式返回。
-2. 不要包含任何解释性文字。
-
-需要提取的字段：
-- company_name: 企业全称
-- loan_purpose: 贷款具体用途
-- industry: 所属行业分类
-
-文档内容：
-{all_docs_content[:30000]} 
-"""
+    prompt = Prompts.EXTRACTOR_SYSTEM.format(content=all_docs_content[:30000])
     
     try:
         res = await llm.ainvoke(prompt)
@@ -92,24 +82,10 @@ async def auditor_node(state: GreenCreditState) -> Dict[str, Any]:
     - 已传文档数量: {len(state.get('uploaded_documents', []))}
     """
     
-    prompt = f"""你是一个资深的绿色信贷审查员。你的任务是评估当前收集到的信息是否足以进行深度合规性分析。
-
-当前信息摘要：
-{info_summary}
-用户最新指令：{state.get('user_query')}
-
-评估准则：
-1. 正常情况下：必须有企业全称、具体贷款用途、且至少有一份文档。
-2. 例外情况：如果用户明确要求直接分析，则必须 PASS。
-
-请给出你的结论。必须以 JSON 格式输出，不要包含任何多余文字：
-{{
-  "status": "PASS" 或 "MISSING",
-  "missing_items": ["缺失项1", "缺失项2"], 
-  "guide_message": "给用户的温馨提示语",
-  "reason": "你做出此判断的内部理由"
-}}
-"""
+    prompt = Prompts.AUDITOR_SYSTEM.format(
+        info_summary=info_summary,
+        user_query=state.get('user_query')
+    )
 
     try:
         res = await llm.ainvoke(prompt)
@@ -121,8 +97,6 @@ async def auditor_node(state: GreenCreditState) -> Dict[str, Any]:
             raise ValueError("Failed to extract valid JSON from LLM response")
         
         status = data.get("status", "MISSING")
-        
-        # 逻辑检查：如果用户说“分析一下”，但模型因为没文档判为 MISSING，这里增加一层语义检查（可选，但 Prompt 已经强调了）
         
         if status == "PASS":
             return {
@@ -156,26 +130,48 @@ async def chat_node(state: GreenCreditState) -> Dict[str, Any]:
     # 将 LangChain 消息对象转换为文本上下文
     history_text = "\n".join([f"{msg.type}: {msg.content}" for msg in history])
     
-    prompt = f"""你是一个绿色信贷智能助手。请回答用户的输入。
-如果用户是在问关于之前的对话内容，请参考以下历史记录。
-如果用户只是打招呼，请礼貌回应。
-
-[对话历史]
-{history_text}
-
-用户输入：{state['user_query']}"""
+    prompt = Prompts.CHAT_SYSTEM.format(
+        history=history_text,
+        user_query=state['user_query']
+    )
 
     res = await llm.ainvoke(prompt)
     return {"final_report": res.content, "is_completed": True}
 
 async def policy_enrichment_node(state: GreenCreditState) -> Dict[str, Any]:
-    """真正的 RAG 分析节点"""
-    from app.agents.policy import policy_agent
-    # 调用之前的专家逻辑
-    query = f"{state['company_name']} {state['loan_purpose']} {state['industry_category']}"
+    """
+    政策分析节点 (ReAct Agent)
+    具备自主调用 search_green_policy 工具的能力。
+    """
+    llm = llm_factory.get_expert_model()
     
-    full_text = ""
-    async for chunk in policy_agent.run(query):
-        full_text += chunk
+    # 定义工具列表
+    tools = [search_green_policy]
     
-    return {"final_report": full_text, "is_completed": True}
+    # 创建 ReAct Agent
+    agent_executor = create_react_agent(llm, tools)
+    
+    # 构造 Prompt (这里我们作为 user message 传入，或者修改 create_react_agent 的 system_message 参数)
+    # create_react_agent 支持 `state_modifier` 参数来设置 System Prompt
+    
+    company = state.get("company_name", "未知企业")
+    purpose = state.get("loan_purpose", "未知用途")
+    industry = state.get("industry_category", "未知行业")
+    
+    user_msg = Prompts.POLICY_AGENT_SYSTEM.format(
+        company=company,
+        industry=industry,
+        purpose=purpose
+    )
+    
+    # 调用 Agent
+    response = await agent_executor.ainvoke({"messages": [("user", user_msg)]})
+    
+    # 提取最后一条 AI 消息的内容
+    final_message = response["messages"][-1]
+    
+    return {
+        "final_report": final_message.content,
+        "is_completed": True,
+        "analysis_history": ["Policy Agent 完成了分析。"]
+    }

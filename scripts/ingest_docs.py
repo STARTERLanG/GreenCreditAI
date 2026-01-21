@@ -8,7 +8,7 @@ from langchain_core.documents import Document
 from tqdm import tqdm
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from app.rag.vector_store import vector_service
+from app.rag.vector_store import vector_store
 from app.core.config import settings
 from app.core.logging import logger
 
@@ -87,7 +87,7 @@ def ingest_knowledge_base():
     for i in tqdm(range(0, total_chunks, batch_size), desc="Ingesting"):
         batch = chunks[i : i + batch_size]
         try:
-            vector_service.add_documents(batch)
+            vector_store.add_documents(batch)
             time.sleep(0.5) 
         except Exception as e:
             logger.error(f"Failed to ingest batch {i // batch_size}: {e}")
