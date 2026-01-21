@@ -2,7 +2,7 @@ import json
 from uuid import uuid4
 
 from langchain_core.messages import AIMessage, HumanMessage
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.core.db import engine
 from app.core.logging import logger
@@ -10,6 +10,23 @@ from app.models.session import ChatSession
 
 
 class SessionService:
+    def list_sessions(self) -> list[ChatSession]:
+        """获取所有会话，按时间倒序"""
+        with Session(engine) as session:
+            statement = select(ChatSession).order_by(ChatSession.created_at.desc())
+            results = session.exec(statement)
+            return list(results.all())
+
+    def delete_session(self, session_id: str) -> bool:
+        """删除会话"""
+        with Session(engine) as session:
+            chat_session = session.get(ChatSession, session_id)
+            if chat_session:
+                session.delete(chat_session)
+                session.commit()
+                return True
+            return False
+
     def create_session(self, title: str = "新对话") -> ChatSession:
         """创建新会话"""
         with Session(engine) as session:

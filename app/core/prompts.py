@@ -1,5 +1,6 @@
 # app/core/prompts.py
 
+
 class Prompts:
     """集中管理所有 Agent 的 System Prompt"""
 
@@ -77,9 +78,10 @@ class Prompts:
 
 步骤：
 1. 分析用户提供的企业、行业和用途。
-2. 使用工具检索该行业和用途对应的绿色金融目录政策。
-3. 结合检索结果，判断该项目是否符合绿色信贷支持范围。
-4. 输出一份专业的分析报告。"""
+2. 优先使用 search_enterprise_info 工具（天眼查）核实该企业的经营状态、成立时间等基本面，确保主体真实存在且经营正常。
+3. 使用 search_green_policy 工具检索对应的绿色金融目录。
+4. 如果需要核查企业舆情或补充信息，使用 web_search 工具。
+5. 综合以上信息，输出一份专业的分析报告。"""
 
     # --- Summarizer Agent ---
     SUMMARIZER_SYSTEM = """你是一个专业的对话标题生成器。

@@ -26,6 +26,12 @@ class Settings(BaseSettings):
     # Aliyun Bailian / DashScope
     DASHSCOPE_API_KEY: str
 
+    # Tavily Search
+    TAVILY_API_KEY: str | None = None
+
+    # TianYanCha
+    TIANYANCHA_TOKEN: str | None = None
+
     # Models
     MODEL_ROUTER_NAME: str = "qwen-turbo"
     MODEL_EXPERT_NAME: str = "qwen-max"

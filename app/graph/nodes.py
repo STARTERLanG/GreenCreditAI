@@ -61,7 +61,7 @@ async def auditor_node(state: GreenCreditState) -> dict[str, Any]:
     user_input = f"""
     当前信息摘要：
     {info_summary}
-    用户最新指令：{state.get('user_query')}
+    用户最新指令：{state.get("user_query")}
 
     请开始审计决策。
     """
@@ -123,7 +123,7 @@ async def chat_node(state: GreenCreditState) -> dict[str, Any]:
     [对话历史]
     {history_text}
 
-    用户输入：{state['user_query']}
+    用户输入：{state["user_query"]}
     """
 
     res = await chat_agent.ainvoke({"messages": [HumanMessage(content=user_input)]})

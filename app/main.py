@@ -6,21 +6,24 @@ from fastapi.templating import Jinja2Templates
 
 from app.api.v1 import api_router
 from app.core.config import settings
+from app.core.db import init_db
 from app.core.logging import logger
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 启动时的逻辑
-
     logger.info(f"Starting {settings.APP_ENV} environment...")
 
-    # init_db() # 暂时注释，排查阻塞
+    try:
+        init_db()  # 初始化业务数据库表
+        logger.info("Database initialized successfully.")
+    except Exception as e:
+        logger.error(f"Database initialization failed (likely locked): {e}")
+        # 不抛出异常，允许应用启动，以便前端能显示错误信息而不是无限转圈
 
     yield
-
     # 关闭时的逻辑
-
     logger.info("Shutting down...")
 
 
@@ -32,6 +35,7 @@ app = FastAPI(
     debug=settings.DEBUG,
 )
 
+# 注册路由
 app.include_router(api_router, prefix="/api/v1")
 
 # 挂载静态文件
@@ -50,4 +54,5 @@ async def read_root(request: Request):
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+    # 禁用 reload，避免 Windows 下的文件锁问题，提高启动稳定性
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=False)
