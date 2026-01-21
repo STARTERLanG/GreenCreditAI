@@ -1,21 +1,37 @@
 // --- 1. Utils & Helpers ---
-function getFileCardHtml(name) {
-    return `
-        <div class="flex items-center bg-white/80 border border-emerald-100 rounded-lg p-2 mb-2 shadow-sm w-fit max-w-[200px]">
-            <div class="w-8 h-8 bg-emerald-50 text-emerald-600 rounded flex items-center justify-center mr-3 flex-shrink-0">
-                <i class="fas fa-file-alt text-lg"></i>
-            </div>
-            <div class="text-[11px] text-slate-700 font-medium truncate">${name}</div>
-        </div>
-    `;
-}
-
 function generateUUID() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
     });
 }
+
+// Global Image Modal Helpers (Moved to top)
+window.openImageModal = (url) => {
+    const modal = document.getElementById('image-preview-modal');
+    const img = document.getElementById('image-preview-src');
+    if (!modal || !img) return;
+    
+    img.src = url;
+    modal.classList.remove('hidden');
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        img.classList.replace('scale-95', 'scale-100');
+    }, 10);
+};
+
+window.closeImageModal = () => {
+    const modal = document.getElementById('image-preview-modal');
+    const img = document.getElementById('image-preview-src');
+    if (!modal || !img) return;
+
+    modal.classList.add('opacity-0');
+    img.classList.replace('scale-100', 'scale-95');
+    setTimeout(() => {
+        modal.classList.add('hidden');
+        img.src = '';
+    }, 300);
+};
 
 function scrollToBottom() {
     if (dom.chatWindow) {
@@ -27,6 +43,18 @@ function updatePageTitle(title) {
     document.title = `绿色信贷智能助手 - ${title || '新对话'}`;
 }
 
+function getFileCardHtml(hash, name) {
+    // 注意：onclick="window.openPreview(...)" 确保调用全局函数
+    return `
+        <div onclick="event.stopPropagation(); window.openPreview('${hash}', '${name}')" class="group flex items-center bg-white/80 border border-emerald-100 rounded-lg p-2 mb-2 shadow-sm w-fit max-w-[200px] cursor-pointer hover:bg-emerald-50 transition-colors select-none">
+            <div class="w-8 h-8 bg-emerald-50 text-emerald-600 rounded flex items-center justify-center mr-3 flex-shrink-0 group-hover:bg-white group-hover:text-emerald-700">
+                <i class="fas fa-file-alt text-lg"></i>
+            </div>
+            <div class="text-[11px] text-slate-700 font-medium truncate pointer-events-none">${name}</div>
+        </div>
+    `;
+}
+
 // --- 2. State & Config ---
 let currentSessionId = localStorage.getItem('last_session_id') || generateUUID();
 let isGenerating = false;
@@ -34,9 +62,7 @@ let isSidebarCollapsed = false;
 let sidebarWidth = 250; 
 let pendingRenameId = null;
 let pendingDeleteId = null;
-
-// 附件状态
-let pendingFiles = []; // [{hash, name}]
+let pendingFiles = [];
 
 // --- 3. DOM Elements ---
 const dom = {
@@ -65,14 +91,151 @@ const dom = {
     cancelDeleteBtn: document.getElementById('cancel-delete-btn'),
     confirmDeleteBtn: document.getElementById('confirm-delete-btn'),
     // Pending File
-    pendingFileZone: document.getElementById('pending-file-zone')
+    pendingFileZone: document.getElementById('pending-file-zone'),
+    // Preview Elements
+    previewPanel: document.getElementById('preview-panel'),
+    chatContainer: document.getElementById('chat-container'),
+    previewContent: document.getElementById('preview-content'),
+    previewTitle: document.getElementById('preview-title'),
+    closePreviewBtn: document.getElementById('close-preview-btn'),
+    previewResizer: document.getElementById('preview-resizer'),
+    // View Toggle
+    viewOriginalBtn: document.getElementById('view-original-btn'),
+    viewAiBtn: document.getElementById('view-ai-btn')
 };
+
+// --- Preview Logic ---
+let previewWidth = 0;
+let previewState = { hash: null, name: null, mode: 'ai' }; // 'ai' or 'original'
+
+window.openPreview = async (hash, name) => {
+    previewState = { hash, name, mode: 'ai' }; // 默认 AI 视角
+    const defaultWidth = window.innerWidth * 0.3;
+    
+    dom.previewPanel.style.display = 'flex';
+    dom.previewPanel.offsetHeight; // force repaint
+    dom.previewPanel.style.width = `${defaultWidth}px`;
+    dom.previewPanel.style.transition = 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+    dom.previewTitle.innerText = name;
+    dom.chatContainer.classList.add('w-1/2'); // 辅助挤压（虽然 width 控制了，但保持 safe）
+
+    updateViewToggleUI();
+    await renderPreviewContent();
+};
+
+function updateViewToggleUI() {
+    if (previewState.mode === 'original') {
+        dom.viewOriginalBtn.className = "px-3 py-1 text-xs font-medium rounded-md bg-white text-emerald-600 shadow-sm transition-all";
+        dom.viewAiBtn.className = "px-3 py-1 text-xs font-medium rounded-md text-slate-500 hover:text-slate-700 transition-all";
+    } else {
+        dom.viewAiBtn.className = "px-3 py-1 text-xs font-medium rounded-md bg-white text-emerald-600 shadow-sm transition-all";
+        dom.viewOriginalBtn.className = "px-3 py-1 text-xs font-medium rounded-md text-slate-500 hover:text-slate-700 transition-all";
+    }
+}
+
+if (dom.viewOriginalBtn) dom.viewOriginalBtn.onclick = () => { previewState.mode = 'original'; updateViewToggleUI(); renderPreviewContent(); };
+if (dom.viewAiBtn) dom.viewAiBtn.onclick = () => { previewState.mode = 'ai'; updateViewToggleUI(); renderPreviewContent(); };
+
+async function renderPreviewContent() {
+    const { hash, name, mode } = previewState;
+    dom.previewContent.innerHTML = '<div class="flex items-center justify-center h-full text-slate-400 py-20"><i class="fas fa-spinner fa-spin mr-2"></i> Loading...</div>';
+
+    try {
+        if (mode === 'ai') {
+            const res = await fetch(`/api/v1/documents/content/${hash}`);
+            if (res.ok) {
+                const data = await res.json();
+                dom.previewContent.innerHTML = marked.parse(data.content);
+            } else throw new Error("Load failed");
+        } else {
+            // Original View
+            const res = await fetch(`/api/v1/documents/file/${hash}`);
+            if (!res.ok) throw new Error("File fetch failed");
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const ext = name.split('.').pop().toLowerCase();
+
+            if (ext === 'pdf') {
+                dom.previewContent.innerHTML = `<iframe src="${url}" class="w-full h-full border-none rounded-lg" style="min-height: 600px;"></iframe>`;
+            } else if (ext === 'docx') {
+                dom.previewContent.innerHTML = `<div id="docx-container" class="bg-white p-4"></div>`;
+                docx.renderAsync(blob, document.getElementById("docx-container"))
+                    .then(x => console.log("docx rendered"));
+            } else if (['xlsx', 'xls'].includes(ext)) {
+                dom.previewContent.innerHTML = `<div class="text-center mt-10 text-slate-500"><i class="fas fa-file-excel text-4xl mb-2 text-green-600"></i><br>暂不支持 Excel 原件在线预览，请下载查看。<br><a href="${url}" download="${name}" class="text-emerald-600 underline mt-2">下载文件</a></div>`;
+            } else if (['jpg', 'png', 'jpeg'].includes(ext)) {
+                dom.previewContent.innerHTML = '';
+                const imgContainer = document.createElement('div');
+                imgContainer.className = 'preview-img-container group';
+                // 移除整个容器的点击事件，改为仅按钮触发
+                
+                imgContainer.innerHTML = `
+                    <img src="${url}" class="max-w-full h-auto mx-auto shadow-sm">
+                    <div class="img-zoom-btn" onclick="window.openImageModal('${url}')">
+                        <i class="fas fa-search-plus"></i>
+                    </div>
+                `;
+                dom.previewContent.appendChild(imgContainer);
+            } else {
+                dom.previewContent.innerHTML = `<div class="text-center mt-10 text-slate-500">此格式暂不支持预览<br><a href="${url}" download="${name}" class="text-emerald-600 underline mt-2">下载文件</a></div>`;
+            }
+        }
+    } catch (e) {
+        dom.previewContent.innerHTML = `<div class="text-red-500 text-center mt-10">加载失败: ${e.message}</div>`;
+    }
+}
+
+if (dom.closePreviewBtn) {
+    dom.closePreviewBtn.onclick = () => {
+        dom.previewPanel.style.width = '0px';
+        // 动画结束后隐藏
+        setTimeout(() => { 
+            if (dom.previewPanel.style.width === '0px') {
+                dom.previewPanel.style.display = 'none'; 
+            }
+        }, 300);
+    };
+}
+
+// --- Preview Resizer ---
+if (dom.previewResizer && dom.previewPanel) {
+    let isResizingRight = false;
+
+    dom.previewResizer.addEventListener('mousedown', (e) => {
+        isResizingRight = true;
+        e.preventDefault();
+        dom.previewResizer.classList.add('resizing');
+        document.body.style.cursor = 'col-resize';
+        dom.previewPanel.style.transition = 'none'; // 禁用动画
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isResizingRight) return;
+        
+        // 计算右侧宽度：屏幕总宽 - 鼠标X坐标
+        let newWidth = window.innerWidth - e.clientX;
+        
+        // 限制范围 (最小 200, 最大 80%)
+        if (newWidth < 200) newWidth = 200;
+        if (newWidth > window.innerWidth * 0.8) newWidth = window.innerWidth * 0.8;
+        
+        dom.previewPanel.style.width = `${newWidth}px`;
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (isResizingRight) {
+            isResizingRight = false;
+            dom.previewResizer.classList.remove('resizing');
+            document.body.style.cursor = 'default';
+            dom.previewPanel.style.transition = 'width 0.3s ease-in-out';
+        }
+    });
+}
 
 // --- 4. Sidebar & Resize Logic ---
 if (dom.resizer && dom.sidebar) {
     let isResizing = false;
     dom.resizer.addEventListener('mousedown', (e) => {
-        console.log("Resizer: Mouse Down");
         isResizing = true; e.preventDefault();
         dom.resizer.classList.add('resizing');
         document.body.style.cursor = 'col-resize';
@@ -91,7 +254,6 @@ if (dom.resizer && dom.sidebar) {
     });
     document.addEventListener('mouseup', () => {
         if (isResizing) {
-            console.log("Resizer: Mouse Up");
             isResizing = false; dom.resizer.classList.remove('resizing');
             document.body.style.cursor = 'default';
             dom.sidebar.style.transition = 'width 0.3s ease-in-out';
@@ -117,6 +279,7 @@ function expandSidebar() {
     document.querySelectorAll('.sidebar-text').forEach(el => el.classList.remove('hidden'));
     if (dom.searchBtn) dom.searchBtn.classList.remove('hidden');
     dom.newChatBtn.classList.add('px-4', 'space-x-2');
+    dom.newChatBtn.classList.add('justify-center', 'px-0'); // 修复之前的 justify-center remove bug
     dom.newChatBtn.classList.remove('justify-center', 'px-0');
 }
 
@@ -192,7 +355,7 @@ function renderWelcome() {
 function fillInput(text) { if (dom.input) { dom.input.value = text; dom.input.focus(); } }
 window.fillInput = fillInput;
 
-function renderMessage(content, role, animate = true, isHtml = false) {
+function renderMessage(content, role, animate = true, attachments = []) {
     if (!dom.chatWindow) return;
     const welcome = dom.chatWindow.querySelector('.welcome-screen');
     if (welcome) welcome.remove();
@@ -202,7 +365,7 @@ function renderMessage(content, role, animate = true, isHtml = false) {
     const isUser = role === 'user';
     const avatarImg = isUser ? '/static/img/user-avatar.svg' : '/static/img/ai-avatar.svg';
     
-    // ... (actionsHtml 保持不变)
+    // ... actionsHtml ...
     const actionsHtml = isUser ? `
         <div class="msg-actions justify-end mr-1">
             <button class="action-btn copy-btn" title="复制"><i class="fas fa-copy"></i></button>
@@ -217,33 +380,36 @@ function renderMessage(content, role, animate = true, isHtml = false) {
 
     const avatarHtml = `<img src="${avatarImg}" class="avatar ${isUser ? 'order-2 ml-4' : 'order-1 mr-4'}" alt="${role}">`;
     
-    // 内容处理：支持 HTML 注入和附件标记解析
     let htmlContent = '';
-    if (isUser) {
-        // 识别 [附件: file1, file2] 格式
-        const attachmentRegex = /^\[附件:\s*(.*?)\]\n?/;
+    
+    // 1. 优先使用结构化 attachments
+    if (attachments && attachments.length > 0) {
+        let cardsHtml = `<div class="file-cards-list mb-2 flex flex-wrap gap-2 justify-end">`;
+        attachments.forEach(f => cardsHtml += getFileCardHtml(f.hash, f.name));
+        cardsHtml += `</div>`;
+        htmlContent = `<div>${cardsHtml}${content ? `<div class="whitespace-pre-wrap">${content}</div>` : ''}</div>`;
+    } 
+    // 2. 正则兼容旧数据 (可选)
+    else if (isUser) {
+        const attachmentRegex = /\[附件:\s*(.*?)\]\n?/;
         const match = content.match(attachmentRegex);
-        
         if (match) {
-            const fileNames = match[1].split(',').map(n => n.trim());
-            const restOfContent = content.replace(attachmentRegex, '').trim();
-            
-            let cardsHtml = `<div class="file-cards-list mb-2 flex flex-wrap gap-2">`;
-            fileNames.forEach(name => {
-                cardsHtml += getFileCardHtml(name);
+             // ... 旧逻辑保持不动作为兜底 ...
+             const fileItems = match[1].split(',').map(item => {
+                const parts = item.trim().split('|');
+                return { hash: parts[0] || '', name: parts[1] || parts[0] };
             });
+            const restOfContent = content.replace(attachmentRegex, '').trim();
+            let cardsHtml = `<div class="file-cards-list mb-2 flex flex-wrap gap-2 justify-end">`;
+            fileItems.forEach(f => cardsHtml += getFileCardHtml(f.hash, f.name));
             cardsHtml += `</div>`;
-            
             htmlContent = `<div>${cardsHtml}${restOfContent ? `<div class="whitespace-pre-wrap">${restOfContent}</div>` : ''}</div>`;
-        } else if (isHtml) {
-            htmlContent = `<div>${content}</div>`;
         } else {
             htmlContent = `<div class="whitespace-pre-wrap">${content}</div>`;
         }
     } else {
         htmlContent = `<div class="markdown-body">${marked.parse(content)}</div>`;
     }
-
     const bubbleClass = isUser ? 'bg-gray-100 text-gray-800 rounded-[20px] rounded-tr-sm px-5 py-3' : 'text-gray-800 pt-1 w-full';
     wrapper.innerHTML = `
         <div class="msg-content-container flex w-full ${isUser ? 'justify-end' : 'justify-start'}">
@@ -307,8 +473,13 @@ async function loadSessionHistory(id) {
         const res = await fetch(`/api/v1/chat/sessions/${id}`); if (!res.ok) { renderWelcome(); return; }
         const data = await res.json(); if (dom.chatWindow) dom.chatWindow.innerHTML = ''; 
         updatePageTitle(data.title);
-        const history = Array.isArray(data.history) ? data.history : [];
-        if (history.length > 0) history.forEach(msg => renderMessage(msg.content, msg.role, false)); else renderWelcome();
+                const history = Array.isArray(data.history) ? data.history : [];
+                if (history.length > 0) {
+                    history.forEach(msg => renderMessage(msg.content, msg.role, false, msg.attachments || []));
+                } else {
+                    renderWelcome();
+                }
+        
         scrollToBottom();
     } catch (e) { renderWelcome(); }
 }
@@ -336,32 +507,27 @@ window.deleteSession = (id, title) => openDeleteModal(id, title);
 
 // --- 9. Pending File Rendering ---
 function renderPendingFiles() {
-    if (pendingFiles.length === 0) {
-        dom.pendingFileZone.classList.add('hidden');
-        return;
-    }
-    dom.pendingFileZone.classList.remove('hidden');
-    dom.pendingFileZone.innerHTML = '';
+    if (pendingFiles.length === 0) { dom.pendingFileZone.classList.add('hidden'); return; }
+    dom.pendingFileZone.classList.remove('hidden'); dom.pendingFileZone.innerHTML = '';
     pendingFiles.forEach((file, index) => {
         const card = document.createElement('div');
-        card.className = 'group relative w-32 bg-white border border-emerald-100 rounded-xl p-3 shadow-sm hover:shadow-md transition-all flex flex-col items-center text-center';
+        // 为整个卡片添加点击预览功能
+        card.className = 'group relative w-32 bg-white border border-emerald-100 rounded-xl p-3 shadow-sm hover:shadow-md transition-all flex flex-col items-center text-center cursor-pointer hover:bg-emerald-50';
+        card.onclick = () => window.openPreview(file.hash, file.name);
+        
         card.innerHTML = `
-            <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center mb-2">
+            <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center mb-2 group-hover:bg-white transition-colors">
                 <i class="fas fa-file-alt text-xl"></i>
             </div>
             <div class="text-[10px] text-slate-600 font-medium truncate w-full px-1">${file.name}</div>
-            <button onclick="removePendingFile(${index})" class="absolute -top-2 -right-2 w-5 h-5 bg-slate-100 text-slate-400 hover:bg-red-500 hover:text-white rounded-full flex items-center justify-center text-[10px] shadow-sm transition-colors opacity-0 group-hover:opacity-100">
+            <button onclick="event.stopPropagation(); removePendingFile(${index})" class="absolute -top-2 -right-2 w-5 h-5 bg-slate-100 text-slate-400 hover:bg-red-500 hover:text-white rounded-full flex items-center justify-center text-[10px] shadow-sm transition-colors opacity-0 group-hover:opacity-100">
                 <i class="fas fa-times"></i>
             </button>
         `;
         dom.pendingFileZone.appendChild(card);
     });
 }
-
-window.removePendingFile = (index) => {
-    pendingFiles.splice(index, 1);
-    renderPendingFiles();
-};
+window.removePendingFile = (index) => { pendingFiles.splice(index, 1); renderPendingFiles(); };
 
 // --- 10. Event Listeners ---
 if (dom.newChatBtn) {
@@ -378,76 +544,40 @@ if (dom.sendBtn) {
         if ((!message && pendingFiles.length === 0) || isGenerating) return;
         isGenerating = true; dom.sendBtn.disabled = true; dom.input.value = '';
         
-        // 组装带标记的消息 (供持久化和后续解析)
-        let finalMsg = message;
-        if (pendingFiles.length > 0) {
-            const fileListStr = pendingFiles.map(f => f.name).join(', ');
-            finalMsg = `[附件: ${fileListStr}]\n${message}`;
-        }
+        // 传递结构化数据给前端渲染
+        const currentFiles = [...pendingFiles];
+        renderMessage(message, 'user', true, currentFiles);
         
-        // 渲染消息 (renderMessage 内部会解析这个标记并显示卡片)
-        renderMessage(finalMsg, 'user');
-        
-        // 提取哈希用于发送
         const attachedHashes = pendingFiles.map(f => f.hash);
         pendingFiles = []; renderPendingFiles();
 
-        const loadingHtml = `<div class="typing-loader"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+        const loadingHtml = `<div class="flex items-center space-x-3 text-slate-500 py-2"><div class="typing-loader"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div><div class="typing-status text-xs font-semibold tracking-tight text-slate-600">Waiting...</div></div>`;
         const aiContentDiv = renderMessage(loadingHtml, 'assistant');
         let fullText = "", isFirstToken = true;
         
         try {
-            // 这里我们暂时只传第一个文件哈希，后端目前只支持一个。后续可扩展为 file_hashes 数组。
             const response = await fetch('/api/v1/chat/completions', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    message: message, 
-                    session_id: currentSessionId, 
-                    file_hashes: attachedHashes 
-                })
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: message, session_id: currentSessionId, file_hashes: attachedHashes })
             });
             const reader = response.body.getReader(); const decoder = new TextDecoder("utf-8"); let buffer = "";
-                        while (true) {
-                            const { done, value } = await reader.read(); if (done) break;
-                            buffer += decoder.decode(value, { stream: true }); let lines = buffer.split("\n"); buffer = lines.pop();
-                            for (let line of lines) {
-                                line = line.trim(); if (!line || !line.startsWith("data: ")) continue;
-                                try {
-                                    const data = JSON.parse(line.substring(6));
-                                    
-                                                            // 处理思考状态
-                                                            if (data.event === 'think') {
-                                                                const statusEl = aiContentDiv.querySelector('.typing-status');
-                                                                if (statusEl) {
-                                                                    statusEl.innerText = data.payload;
-                                                                } else {
-                                                                    aiContentDiv.innerHTML = `
-                                                                        <div class="flex items-center space-x-3 text-slate-500 py-2">
-                                                                            <div class="typing-loader">
-                                                                                <div class="typing-dot"></div>
-                                                                                <div class="typing-dot"></div>
-                                                                                <div class="typing-dot"></div>
-                                                                            </div>
-                                                                            <div class="typing-status text-xs font-semibold tracking-tight text-slate-600">${data.payload}</div>
-                                                                        </div>
-                                                                    `;
-                                                                }
-                                                            }
-                                                                        // 处理正式回复
-                                    if (data.event === 'token' && data.payload) {
-                                        if (isFirstToken) { 
-                                            aiContentDiv.innerHTML = ""; 
-                                            isFirstToken = false; 
-                                        }
-                                        fullText += data.payload;
-                                        aiContentDiv.innerHTML = marked.parse(fullText);
-                                        scrollToBottom();
-                                    }
-                                } catch (e) {}
-                            }
+            while (true) {
+                const { done, value } = await reader.read(); if (done) break;
+                buffer += decoder.decode(value, { stream: true }); let lines = buffer.split("\n"); buffer = lines.pop();
+                for (let line of lines) {
+                    line = line.trim(); if (!line.startsWith("data: ")) continue;
+                    try {
+                        const data = JSON.parse(line.substring(6));
+                        if (data.event === 'think') {
+                            const statusEl = aiContentDiv.querySelector('.typing-status');
+                            if (statusEl) statusEl.innerText = data.payload;
+                        } else if (data.event === 'token' && data.payload) {
+                            if (isFirstToken) { aiContentDiv.innerHTML = ""; isFirstToken = false; }
+                            fullText += data.payload; aiContentDiv.innerHTML = marked.parse(fullText); scrollToBottom();
                         }
-            
+                    } catch (e) {}
+                }
+            }
             await loadSessions();
             const res = await fetch(`/api/v1/chat/sessions/${currentSessionId}`); if (res.ok) { const d = await res.json(); updatePageTitle(d.title); }
         } catch (error) { aiContentDiv.innerHTML = `<span class="text-red-500">连接异常</span>`; }
@@ -462,9 +592,7 @@ if (dom.uploadBtn) {
             const files = Array.from(dom.fileInput.files);
             for (const file of files) {
                 const formData = new FormData(); formData.append('file', file);
-                const oldIcon = dom.uploadBtn.innerHTML;
-                dom.uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin text-emerald-600"></i>';
-                dom.uploadBtn.disabled = true;
+                const oldIcon = dom.uploadBtn.innerHTML; dom.uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin text-emerald-600"></i>'; dom.uploadBtn.disabled = true;
                 try {
                     const res = await fetch('/api/v1/documents/upload', { method: 'POST', body: formData });
                     if (res.ok) {
@@ -473,11 +601,8 @@ if (dom.uploadBtn) {
                         renderPendingFiles();
                     }
                 } catch (e) {}
-                finally {
-                    dom.uploadBtn.innerHTML = oldIcon; dom.uploadBtn.disabled = false;
-                }
+                finally { dom.uploadBtn.innerHTML = oldIcon; dom.uploadBtn.disabled = false; dom.fileInput.value = ''; }
             }
-            dom.fileInput.value = '';
         }
     };
 }

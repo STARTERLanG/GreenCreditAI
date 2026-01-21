@@ -209,7 +209,84 @@ button:focus {
     background-color: #10b981; /* 莫兰迪绿细线 */
 }
 
-/* 禁止侧边栏内容在拖拽时被选中 */
-.sidebar-content {
-    user-select: none;
+/* 右侧预览区左边缘拖拽把手 */
+.resizer-left {
+    position: absolute;
+    top: 0;
+    left: -3px;
+    width: 6px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
 }
+
+.resizer-left::after {
+    content: "";
+    width: 2px;
+    height: 100%;
+    background-color: transparent;
+    transition: background-color 0.2s;
+}
+
+/* 11. 图片预览交互 */
+.preview-img-container {
+    position: relative;
+    display: inline-block;
+    cursor: default; /* 不再显示放大手型 */
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.img-zoom-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 36px;
+    height: 36px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(4px);
+    cursor: pointer; /* 按钮本身还是要有手型 */
+}
+
+.preview-img-container:hover .img-zoom-btn {
+    opacity: 1;
+}
+
+.img-zoom-btn:hover {
+    background-color: rgba(0, 0, 0, 0.7);
+    transform: scale(1.1);
+}
+
+.img-zoom-btn i {
+    color: white;
+    font-size: 1rem;
+}
+    width: 100% !important;
+    overflow-x: hidden;
+}
+#docx-container .docx-wrapper {
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+#docx-container .docx {
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important; /* 已经由父级 p-6 控制 */
+    width: 100% !important;
+    min-height: auto !important;
+    background: transparent !important;
+}
+#docx-container img {
+    max-width: 100%;
+    height: auto;
+}
+

@@ -50,7 +50,9 @@ class DocumentService:
                     # 如果需要，可以将临时文件重命名为正式文件 (可选)
                     # 清理临时文件
                     temp_path.unlink()
-                    return cached_file.content, file_hash
+                    # 构造已存在的路径
+                    existing_path = self.upload_dir / f"{file_hash}{Path(file.filename).suffix}"
+                    return cached_file.content, file_hash, existing_path
 
                 # 4. Cache Miss: 解析内容
                 logger.info("Cache MISS. Parsing file...")
@@ -75,7 +77,7 @@ class DocumentService:
                 else:
                     temp_path.unlink()
                 
-                return content, file_hash
+                return content, file_hash, final_path
 
         finally:
             file.file.close()

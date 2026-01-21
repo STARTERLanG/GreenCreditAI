@@ -6,12 +6,14 @@ from app.core.config import settings
 from app.core.logging import logger
 from app.core.db import init_db
 from app.api.v1 import api_router
+from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
+from app.services.graph_engine import create_base_graph
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 启动时的逻辑
     logger.info(f"Starting {settings.APP_ENV} environment...")
-    init_db() # 初始化数据库表
+    init_db() # 初始化业务数据库表
     yield
     # 关闭时的逻辑
     logger.info("Shutting down...")

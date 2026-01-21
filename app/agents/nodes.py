@@ -146,9 +146,26 @@ async def auditor_node(state: GreenCreditState) -> Dict[str, Any]:
         }
 
 async def chat_node(state: GreenCreditState) -> Dict[str, Any]:
-    """闲聊节点"""
+    """闲聊节点 (支持历史上下文回溯)"""
+    from app.services.session_service import session_service
+    # 获取最近 10 条历史
+    history = session_service.get_chat_history(state["session_id"], limit=10)
+    
     llm = llm_factory.get_router_model()
-    res = await llm.ainvoke(f"你是绿色信贷助手，请用一句话专业地回答用户的闲聊：{state['user_query']}")
+    
+    # 将 LangChain 消息对象转换为文本上下文
+    history_text = "\n".join([f"{msg.type}: {msg.content}" for msg in history])
+    
+    prompt = f"""你是一个绿色信贷智能助手。请回答用户的输入。
+如果用户是在问关于之前的对话内容，请参考以下历史记录。
+如果用户只是打招呼，请礼貌回应。
+
+[对话历史]
+{history_text}
+
+用户输入：{state['user_query']}"""
+
+    res = await llm.ainvoke(prompt)
     return {"final_report": res.content, "is_completed": True}
 
 async def policy_enrichment_node(state: GreenCreditState) -> Dict[str, Any]:

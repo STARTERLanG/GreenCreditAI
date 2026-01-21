@@ -47,7 +47,7 @@ class SessionService:
             logger.error(f"Error parsing history for session {session_id}: {e}")
             return []
 
-    def append_message(self, session_id: str, role: str, content: str):
+    def append_message(self, session_id: str, role: str, content: str, attachments: list = None):
         """追加消息到历史记录 (如果会话不存在则自动创建)"""
         with Session(engine) as session:
             chat_session = session.get(ChatSession, session_id)
@@ -61,7 +61,6 @@ class SessionService:
                     history="[]"
                 )
                 session.add(chat_session)
-                # 注意：这里不需要 commit，下面会统一 commit
 
             # 反序列化 -> 追加 -> 序列化
             try:
@@ -69,7 +68,12 @@ class SessionService:
             except Exception:
                 history = []
             
-            history.append({"role": role, "content": content})
+            # 构建消息对象
+            msg_obj = {"role": role, "content": content}
+            if attachments:
+                msg_obj["attachments"] = attachments
+                
+            history.append(msg_obj)
             
             chat_session.history = json.dumps(history, ensure_ascii=False)
             session.add(chat_session)
