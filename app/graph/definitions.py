@@ -1,13 +1,13 @@
 from langgraph.graph import END, START, StateGraph
 
-from app.agents.nodes import (
+from app.graph.nodes import (
     auditor_node,
     chat_node,
     extractor_node,
     policy_enrichment_node,
     router_node,
 )
-from app.schemas.state import GreenCreditState
+from app.graph.state import GreenCreditState
 
 
 def create_base_graph():

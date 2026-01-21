@@ -6,17 +6,21 @@ from fastapi.templating import Jinja2Templates
 
 from app.api.v1 import api_router
 from app.core.config import settings
-from app.core.db import init_db
 from app.core.logging import logger
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 启动时的逻辑
+
     logger.info(f"Starting {settings.APP_ENV} environment...")
-    init_db()  # 初始化业务数据库表
+
+    # init_db() # 暂时注释，排查阻塞
+
     yield
+
     # 关闭时的逻辑
+
     logger.info("Shutting down...")
 
 

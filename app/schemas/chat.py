@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 class IntentType(str, Enum):
     GENERAL_CHAT = "GENERAL_CHAT"  # 闲聊
     POLICY_QUERY = "POLICY_QUERY"  # 政策查询
-    DOCUMENT_ANALYSIS = "DOCUMENT_ANALYSIS"  # 文档分析
+    PROJECT_AUDIT = "PROJECT_AUDIT"  # 项目申报/审核 (原文档分析)
     SUPPLEMENTARY_INFO = "SUPPLEMENTARY_INFO"  # 补充材料信息
 
 

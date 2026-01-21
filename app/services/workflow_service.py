@@ -7,13 +7,13 @@ from langgraph.checkpoint.memory import MemorySaver
 
 from app.agents.summarizer import summarizer_agent
 from app.core.logging import logger
+from app.graph.definitions import create_base_graph
 from app.schemas.chat import ChatRequest
 from app.services.document_service import UPLOAD_CACHE
-from app.services.graph_engine import create_base_graph
 from app.services.session_service import session_service
 
 
-class WorkflowEngine:
+class WorkflowService:
     NODE_TIPS = {
         "router": "正在分析您的意图...",
         "extractor": "正在提取企业与项目核心信息...",
@@ -116,4 +116,4 @@ class WorkflowEngine:
         return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
 
 
-workflow_engine = WorkflowEngine()
+workflow_service = WorkflowService()
