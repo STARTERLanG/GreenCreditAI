@@ -1,5 +1,7 @@
 import os
+
 from loguru import logger
+
 
 def configure_network_settings():
     """
@@ -7,8 +9,15 @@ def configure_network_settings():
     """
     os.environ["ANONYMIZED_TELEMETRY"] = "False"
     os.environ["CHROMA_TELEMETRY_IMPL"] = "false"
-    
-    proxy_vars = ["HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"]
+
+    proxy_vars = [
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "ALL_PROXY",
+        "http_proxy",
+        "https_proxy",
+        "all_proxy",
+    ]
 
     removed = []
     for var in proxy_vars:

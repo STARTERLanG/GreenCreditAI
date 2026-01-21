@@ -1,13 +1,14 @@
-from typing import List
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import BaseMessage
-from app.services.llm_factory import llm_factory
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+
 from app.core.logging import logger
+from app.services.llm_factory import llm_factory
+
 
 class AnalysisAgent:
     def __init__(self):
         self.llm = llm_factory.get_expert_model()
-        
+
         system_template = """你是专业的信贷财务与ESG分析师。
 用户上传了一份文件（财报、ESG报告等），内容如下：
 
@@ -22,28 +23,29 @@ class AnalysisAgent:
 3. 如果文件中没有相关信息，请明确告知。
 4. 使用 Markdown 格式输出。"""
 
-        self.prompt = ChatPromptTemplate.from_messages([
-            ("system", system_template),
-            MessagesPlaceholder(variable_name="chat_history"),
-            ("human", "{query}")
-        ])
+        self.prompt = ChatPromptTemplate.from_messages(
+            [
+                ("system", system_template),
+                MessagesPlaceholder(variable_name="chat_history"),
+                ("human", "{query}"),
+            ]
+        )
 
-    async def run(self, query: str, file_context: str, chat_history: List[BaseMessage] = []):
+    async def run(self, query: str, file_context: str, chat_history: list[BaseMessage] | None = None):
         """执行分析"""
+        if chat_history is None:
+            chat_history = []
         if not file_context:
             yield "【系统提示】您似乎还没有上传文件，或者文件解析失败。请先上传文件。"
             return
 
         logger.info(f"Analysis Agent running. Context length: {len(file_context)}")
-        safe_context = file_context[:100000] 
-        
+        safe_context = file_context[:100000]
+
         chain = self.prompt | self.llm
-        async for chunk in chain.astream({
-            "query": query, 
-            "file_content": safe_context,
-            "chat_history": chat_history
-        }):
+        async for chunk in chain.astream({"query": query, "file_content": safe_context, "chat_history": chat_history}):
             if chunk.content:
                 yield chunk.content
+
 
 analysis_agent = AnalysisAgent()

@@ -1,9 +1,10 @@
 from pathlib import Path
+
 from app.core.logging import logger
-from app.parsers.pdf import PDFParser
-from app.parsers.office import ExcelParser, WordParser
-from app.parsers.text import TextParser
 from app.parsers.image import ImageParser
+from app.parsers.office import ExcelParser, WordParser
+from app.parsers.pdf import PDFParser
+from app.parsers.text import TextParser
 
 # 注册解析器映射
 PARSER_REGISTRY = {
@@ -19,6 +20,7 @@ PARSER_REGISTRY = {
     ".jpeg": ImageParser(),
 }
 
+
 def parse_file(file_path: Path) -> str:
     """
     通用文件解析入口。
@@ -26,10 +28,10 @@ def parse_file(file_path: Path) -> str:
     """
     suffix = file_path.suffix.lower()
     parser = PARSER_REGISTRY.get(suffix)
-    
+
     if not parser:
         raise ValueError(f"Unsupported file type: {suffix}")
-    
+
     logger.info(f"Parsing {file_path.name} using {parser.__class__.__name__}...")
     try:
         return parser.parse(file_path)

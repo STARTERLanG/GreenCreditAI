@@ -1,17 +1,20 @@
-import shutil
 import hashlib
+import shutil
 from pathlib import Path
+
 from fastapi import UploadFile
 from sqlmodel import Session
+
 from app.core.config import settings
-from app.core.logging import logger
 from app.core.db import engine
+from app.core.logging import logger
 from app.models.file import FileParsingCache
 from app.parsers import parse_file
 
 # 简单的内存缓存
 # Key: file_hash, Value: {"content": str, "filename": str}
 UPLOAD_CACHE = {}
+
 
 class DocumentService:
     def __init__(self):
@@ -37,7 +40,7 @@ class DocumentService:
         try:
             with temp_path.open("wb") as buffer:
                 shutil.copyfileobj(file.file, buffer)
-            
+
             # 2. 计算 Hash
             file_hash = self._calculate_hash(temp_path)
             logger.info(f"File hash: {file_hash}")
@@ -57,14 +60,14 @@ class DocumentService:
                 # 4. Cache Miss: 解析内容
                 logger.info("Cache MISS. Parsing file...")
                 content = parse_file(temp_path)
-                
+
                 # 5. 存入数据库
                 new_cache = FileParsingCache(
                     file_hash=file_hash,
                     filename=file.filename,
                     content=content,
                     file_type=Path(file.filename).suffix,
-                    file_size=temp_path.stat().st_size
+                    file_size=temp_path.stat().st_size,
                 )
                 session.add(new_cache)
                 session.commit()
@@ -76,7 +79,7 @@ class DocumentService:
                     shutil.move(temp_path, final_path)
                 else:
                     temp_path.unlink()
-                
+
                 return content, file_hash, final_path
 
         finally:
@@ -84,5 +87,6 @@ class DocumentService:
             # 确保临时文件被清理
             if temp_path.exists():
                 temp_path.unlink()
+
 
 document_service = DocumentService()

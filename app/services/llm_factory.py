@@ -1,10 +1,12 @@
 from langchain_community.chat_models import ChatTongyi
+
 from app.core.config import settings
 from app.core.logging import logger
 
+
 class LLMFactory:
     """LLM 客户端工厂类，管理大小模型的初始化"""
-    
+
     @staticmethod
     def get_router_model() -> ChatTongyi:
         """获取 L1 路由模型 (小模型)"""
@@ -24,6 +26,7 @@ class LLMFactory:
             dashscope_api_key=settings.DASHSCOPE_API_KEY,
             streaming=True,
         )
+
 
 # 单例模式或工厂方法供外部调用
 llm_factory = LLMFactory()

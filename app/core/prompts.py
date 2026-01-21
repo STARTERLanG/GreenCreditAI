@@ -1,5 +1,6 @@
 # app/core/prompts.py
 
+
 class Prompts:
     """集中管理所有 Agent 的 System Prompt"""
 
@@ -8,19 +9,19 @@ class Prompts:
 
 请根据以下分类标准判断用户的意图：
 
-1. 闲聊 (GENERAL_CHAT): 
+1. 闲聊 (GENERAL_CHAT):
    - 问候、自我介绍、感谢。
    - 对对话历史的回顾（如“我刚才说了什么”、“总结一下我们的对话”）。
    - 对 AI 能力的询问（如“你能做什么”）。
    - 与信贷业务无关的通用话题。
    (示例: "你好", "回顾一下刚才的问题", "谢谢", "今天天气不错")
 
-2. 政策查询 (POLICY_QUERY): 
+2. 政策查询 (POLICY_QUERY):
    - 询问绿色信贷相关的政策、标准、目录。
    - 询问某类项目是否符合支持范围。
    (示例: "光伏项目有什么补贴政策？", "养猪符合绿色信贷吗？")
 
-3. 项目申报/审核 (PROJECT_AUDIT): 
+3. 项目申报/审核 (PROJECT_AUDIT):
    - 用户想要提交项目信息进行审核。
    - 用户上传了文件并要求分析。
    - 用户提供了具体的企业名称或项目细节。
@@ -45,7 +46,7 @@ class Prompts:
 - industry: 所属行业分类
 
 文档内容：
-{content} 
+{content}
 """
 
     # --- Auditor Node ---
@@ -64,7 +65,7 @@ class Prompts:
 请给出你的结论。必须以 JSON 格式输出，不要包含任何多余文字：
 {{
   "status": "PASS" 或 "MISSING",
-  "missing_items": ["缺失项1", "缺失项2"], 
+  "missing_items": ["缺失项1", "缺失项2"],
   "guide_message": "给用户的温馨提示语",
   "reason": "你做出此判断的内部理由"
 }}

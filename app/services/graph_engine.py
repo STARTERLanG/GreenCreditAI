@@ -1,9 +1,14 @@
-from langgraph.graph import StateGraph, START, END
-from app.schemas.state import GreenCreditState
+from langgraph.graph import END, START, StateGraph
+
 from app.agents.nodes import (
-    router_node, chat_node, extractor_node, 
-    policy_enrichment_node, auditor_node
+    auditor_node,
+    chat_node,
+    extractor_node,
+    policy_enrichment_node,
+    router_node,
 )
+from app.schemas.state import GreenCreditState
+
 
 def create_base_graph():
     """定义基础拓扑结构，不绑定持久化器"""

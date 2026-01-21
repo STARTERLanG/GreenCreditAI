@@ -1,13 +1,17 @@
+import asyncio
+import json
+from collections.abc import AsyncGenerator
+from typing import Any
+
+from langgraph.checkpoint.memory import MemorySaver
+
+from app.agents.summarizer import summarizer_agent
+from app.core.logging import logger
+from app.schemas.chat import ChatRequest
+from app.services.document_service import UPLOAD_CACHE
 from app.services.graph_engine import create_base_graph
 from app.services.session_service import session_service
-from app.services.document_service import UPLOAD_CACHE
-from app.agents.summarizer import summarizer_agent
-from app.schemas.chat import ChatRequest
-from app.core.logging import logger
-from langgraph.checkpoint.memory import MemorySaver 
-import json
-import asyncio
-from typing import AsyncGenerator, Any
+
 
 class WorkflowEngine:
     NODE_TIPS = {
@@ -15,7 +19,7 @@ class WorkflowEngine:
         "extractor": "正在提取企业与项目核心信息...",
         "enrichment": "材料已就绪，正在进行政策匹配与深度审核...",
         "auditor": "正在进行合规性预审...",
-        "chat": "正在生成回复..."
+        "chat": "正在生成回复...",
     }
 
     def __init__(self):
@@ -28,12 +32,12 @@ class WorkflowEngine:
         user_input = request.message
         session_id = request.session_id
         file_hashes = request.file_hashes
-        
+
         # 1. 准备初始状态
         new_docs = []
         file_names = []
         attachments_data = []
-        
+
         for h in file_hashes:
             if h in UPLOAD_CACHE:
                 file_info = UPLOAD_CACHE[h]
@@ -42,12 +46,12 @@ class WorkflowEngine:
                 file_names.append(file_info["filename"])
                 attachments_data.append({"hash": h, "name": file_info["filename"]})
                 logger.info(f"Attached file loaded: {h} | Name: {file_info['filename']}")
-        
+
         inputs = {
             "user_query": user_input,
             "uploaded_documents": new_docs,
             "session_id": session_id,
-            "is_completed": False
+            "is_completed": False,
         }
 
         should_generate_title = False
@@ -58,12 +62,14 @@ class WorkflowEngine:
 
         if session_id:
             session_service.append_message(
-                session_id, "user", user_input, 
-                attachments=attachments_data if attachments_data else None
+                session_id,
+                "user",
+                user_input,
+                attachments=attachments_data if attachments_data else None,
             )
 
         full_ai_response = ""
-        
+
         try:
             # 使用内部维护的 graph (基于 MemorySaver)
             # 忽略传入的 graph_app 参数（如果有）
@@ -74,7 +80,7 @@ class WorkflowEngine:
                 for node_name, output in event.items():
                     tip = self.NODE_TIPS.get(node_name, "正在处理中...")
                     yield self._pack_event("think", tip)
-                    
+
                     if "final_report" in output and output["final_report"]:
                         content = output["final_report"]
                         if len(content) > 50:
@@ -108,5 +114,6 @@ class WorkflowEngine:
     def _pack_event(self, event_type: str, payload: str) -> str:
         data = {"event": event_type, "payload": payload}
         return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
+
 
 workflow_engine = WorkflowEngine()

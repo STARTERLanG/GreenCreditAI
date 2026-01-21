@@ -1,17 +1,21 @@
+import asyncio
+import time
+from typing import Any
+
+from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_qdrant import QdrantVectorStore
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import Distance, VectorParams
-from langchain_community.embeddings import DashScopeEmbeddings
 from tenacity import retry, stop_after_attempt, wait_fixed
-import time
-import asyncio
-from typing import List, Any
+
 from app.core.config import settings
 from app.core.logging import logger
 
+
 class LoggingDashScopeEmbeddings(DashScopeEmbeddings):
     """带详细日志的 Embedding 包装类"""
-    def embed_documents(self, texts: List[str]) -> List[List[float]]:
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
         logger.debug(f"[Embed] 正在请求阿里云 API Embedding，批次大小: {len(texts)} 条文本...")
         start_time = time.time()
         try:
@@ -22,6 +26,7 @@ class LoggingDashScopeEmbeddings(DashScopeEmbeddings):
         except Exception as e:
             logger.error(f"[Embed] API 请求失败! 耗时: {time.time() - start_time:.2f}s. 错误: {e}")
             raise e
+
 
 class VectorStoreService:
     def __init__(self):
@@ -35,8 +40,7 @@ class VectorStoreService:
     def embeddings(self):
         if self._embeddings is None:
             self._embeddings = LoggingDashScopeEmbeddings(
-                model="text-embedding-v3",
-                dashscope_api_key=settings.DASHSCOPE_API_KEY
+                model="text-embedding-v3", dashscope_api_key=settings.DASHSCOPE_API_KEY
             )
         return self._embeddings
 
@@ -47,14 +51,14 @@ class VectorStoreService:
 
         logger.info(f"Connecting to Qdrant (Local) at {self.persist_directory}...")
         self._client = QdrantClient(path=self.persist_directory)
-        
+
         if not self._client.collection_exists(self.collection_name):
             logger.info(f"Collection '{self.collection_name}' not found. Creating...")
             self._client.create_collection(
                 collection_name=self.collection_name,
-                vectors_config=VectorParams(size=1024, distance=Distance.COSINE)
+                vectors_config=VectorParams(size=1024, distance=Distance.COSINE),
             )
-        
+
         self._db = QdrantVectorStore(
             client=self._client,
             collection_name=self.collection_name,
@@ -86,12 +90,13 @@ class VectorStoreService:
         logger.info(f"Searching for: {query}")
         return self.db.similarity_search(query, k=k)
 
-    async def asearch(self, query: str, k: int = 4) -> List[Any]:
+    async def asearch(self, query: str, k: int = 4) -> list[Any]:
         """异步语义检索 (在线程池中运行同步操作)"""
         logger.info(f"[Async] Searching for: {query}")
         # 由于 Qdrant 本地客户端和 embed_query 都是同步阻塞的，必须放到线程池
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, lambda: self.search(query, k))
+
 
 # 单例导出
 vector_store = VectorStoreService()

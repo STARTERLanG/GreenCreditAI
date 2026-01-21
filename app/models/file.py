@@ -1,5 +1,7 @@
 from datetime import datetime
+
 from sqlmodel import Field, SQLModel
+
 
 class FileParsingCache(SQLModel, table=True):
     __tablename__ = "file_parsing_cache"  # type: ignore

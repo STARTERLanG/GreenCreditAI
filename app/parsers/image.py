@@ -1,5 +1,7 @@
 from pathlib import Path
+
 from app.parsers.base import FileParser
+
 
 class ImageParser(FileParser):
     def parse(self, file_path: Path) -> str:
