@@ -36,20 +36,31 @@ class SessionService:
             session.refresh(new_session)
             return new_session
 
-    def get_session(self, session_id: str) -> ChatSession | None:
-        """获取会话详情"""
+    def get_session(self, session_id: str) -> dict | None:
+        """获取会话详情并确保 history 是解析后的对象"""
         with Session(engine) as session:
-            return session.get(ChatSession, session_id)
+            chat_session = session.get(ChatSession, session_id)
+            if not chat_session:
+                return None
+
+            # 将 SQLModel 对象转为字典，并手动处理 history
+            data = chat_session.model_dump()
+            if isinstance(data["history"], str):
+                try:
+                    data["history"] = json.loads(data["history"])
+                except Exception:
+                    data["history"] = []
+            return data
 
     def get_chat_history(self, session_id: str, limit: int = 10) -> list:
         """获取 LangChain 格式的最近历史记录"""
         session_data = self.get_session(session_id)
-        if not session_data or not session_data.history:
+        if not session_data or not session_data.get("history"):
             return []
 
         try:
-            raw_history = json.loads(session_data.history)
-            # 取最近 limit 条
+            # get_session 已经处理过 json.loads 了，这里直接用
+            raw_history = session_data["history"]
             recent_history = raw_history[-limit:]
 
             messages = []
@@ -63,34 +74,29 @@ class SessionService:
             logger.error(f"Error parsing history for session {session_id}: {e}")
             return []
 
-    def append_message(self, session_id: str, role: str, content: str, attachments: list = None):
-        """追加消息到历史记录 (如果会话不存在则自动创建)"""
+    def append_message(self, session_id: str, role: str, content: str, attachments: list = None, thought_process: list = None):
+        """追加消息到历史记录"""
         with Session(engine) as session:
             chat_session = session.get(ChatSession, session_id)
-
-            # 自动创建逻辑
             if not chat_session:
-                logger.info(f"Session {session_id} not found, creating new one.")
                 chat_session = ChatSession(id=session_id, title="新对话", history="[]")
                 session.add(chat_session)
 
-            # 反序列化 -> 追加 -> 序列化
             try:
                 history = json.loads(chat_session.history)
             except Exception:
                 history = []
 
-            # 构建消息对象
             msg_obj = {"role": role, "content": content}
             if attachments:
                 msg_obj["attachments"] = attachments
+            if thought_process:
+                msg_obj["thought_process"] = thought_process
 
             history.append(msg_obj)
-
             chat_session.history = json.dumps(history, ensure_ascii=False)
             session.add(chat_session)
             session.commit()
-            logger.debug(f"Appended {role} message to session {session_id}")
 
     def update_title(self, session_id: str, title: str):
         """更新会话标题"""

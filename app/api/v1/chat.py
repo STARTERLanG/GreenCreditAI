@@ -17,10 +17,10 @@ async def get_chat_history():
 @router.get("/sessions/{session_id}")
 async def get_session_detail(session_id: str):
     """获取指定会话的详细历史"""
-    session = session_service.get_session(session_id)
-    if not session:
+    session_data = session_service.get_session(session_id)
+    if not session_data:
         raise HTTPException(status_code=404, detail="Session not found")
-    return session
+    return session_data
 
 
 @router.post("/completions")

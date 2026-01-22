@@ -30,7 +30,7 @@
 /* 2. 排版优化 */
 body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background-color: #fcfdfc; /* 冷灰白背景 */
+    background-color: #fcfdfc;
 }
 
 /* 3. 消息布局 */
@@ -41,16 +41,14 @@ body {
     flex-shrink: 0;
 }
 
-/* 最外层包装，占满全宽 */
 .msg-wrapper {
     width: 100%;
     display: flex;
-    justify-content: center; /* 让内部容器居中 */
+    justify-content: center;
     padding: 0 1rem;
     position: relative;
 }
 
-/* 实际内容容器，限制最大宽度 */
 .msg-content-container {
     width: 100%;
     max-width: 800px;
@@ -78,24 +76,27 @@ body {
 .markdown-body th { background-color: #f8fafc; font-weight: 600; }
 
 /* 5. 动画 */
+.fade-in-up {
+    animation: fadeInUp 0.4s ease-out forwards;
+}
+
 @keyframes fadeInUp {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(8px); }
     to { opacity: 1; transform: translateY(0); }
 }
-.fade-in-up {
-    animation: fadeInUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+
+.typing-loader.scale-75 {
+    transform: scale(0.75);
+    transform-origin: left center;
 }
 
 /* 6. 输入框焦点优化 */
-input:focus, 
-textarea:focus, 
-select:focus, 
-button:focus {
+input:focus, textarea:focus, select:focus, button:focus {
     outline: none !important;
 }
 
 .input-glow:focus-within {
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15); /* 使用更柔和的翡翠绿光晕 */
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
     border-color: rgba(16, 185, 129, 0.3) !important;
 }
 
@@ -108,7 +109,6 @@ button:focus {
     margin-top: 4px;
 }
 
-/* 悬停显示 */
 .msg-wrapper:hover .msg-actions {
     opacity: 1;
 }
@@ -133,19 +133,66 @@ button:focus {
     animation: pop 0.2s ease-out forwards;
 }
 
-/* 点赞点踩激活态 */
-.action-btn.active-like {
-    color: #10b981 !important; /* Emerald-500 */
-}
-.action-btn.active-dislike {
-    color: #ef4444 !important; /* Red-500 */
-}
+.action-btn.active-like { color: #10b981 !important; }
+.action-btn.active-dislike { color: #ef4444 !important; }
 
 @keyframes pop {
     0% { transform: scale(0.8); opacity: 0; }
     50% { transform: scale(1.1); opacity: 1; }
     100% { transform: scale(1); opacity: 1; }
 }
+
+/* 8. 侧边栏拖拽把手 */
+.resizer {
+    position: absolute;
+    top: 0;
+    right: -3px;
+    width: 6px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 40;
+    display: flex;
+    justify-content: center;
+}
+
+.resizer::after {
+    content: "";
+    width: 2px;
+    height: 100%;
+    background-color: transparent;
+    transition: background-color 0.2s;
+}
+
+.resizer:hover::after, 
+.resizer.resizing::after {
+    background-color: #10b981;
+}
+
+.resizer-left {
+    position: absolute;
+    top: 0;
+    left: -3px;
+    width: 6px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+}
+
+.resizer-left::after {
+    content: "";
+    width: 2px;
+    height: 100%;
+    background-color: transparent;
+    transition: background-color 0.2s;
+}
+
+.resizer-left:hover::after, 
+.resizer-left.resizing::after {
+    background-color: #10b981;
+}
+
 /* 9. 等待动画 */
 .typing-loader {
     display: flex;
@@ -169,12 +216,12 @@ button:focus {
     font-weight: 600;
     font-family: inherit;
     color: #334155;
-    animation: smooth-breathe 3s infinite ease-in-out; /* 3秒慢呼吸 */
+    animation: smooth-breathe 3s infinite ease-in-out;
 }
 
 @keyframes smooth-breathe {
     0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(0.98); } /* 配合极细微的缩放，更有律动感 */
+    50% { opacity: 0.4; transform: scale(0.98); }
 }
 
 @keyframes typing-bounce {
@@ -182,59 +229,34 @@ button:focus {
     40% { transform: translateY(-6px); }
 }
 
-/* 8. 侧边栏拖拽把手 */
-.resizer {
-    position: absolute;
-    top: 0;
-    right: -3px; /* 居中于边框 */
-    width: 6px;  /* 热区宽度：足够点到但不过宽 */
-    height: 100%;
-    cursor: col-resize;
-    z-index: 9999;
-    display: flex;
-    justify-content: center;
+/* 10. Docx 预览适配 */
+#docx-container {
+    width: 100% !important;
+    overflow-x: hidden;
 }
-
-/* 视觉上的细线 */
-.resizer::after {
-    content: "";
-    width: 2px;
-    height: 100%;
-    background-color: transparent;
-    transition: background-color 0.2s;
+#docx-container .docx-wrapper {
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
 }
-
-.resizer:hover::after, 
-.resizer.resizing::after {
-    background-color: #10b981; /* 莫兰迪绿细线 */
+#docx-container .docx {
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    min-height: auto !important;
+    background: transparent !important;
 }
-
-/* 右侧预览区左边缘拖拽把手 */
-.resizer-left {
-    position: absolute;
-    top: 0;
-    left: -3px;
-    width: 6px;
-    height: 100%;
-    cursor: col-resize;
-    z-index: 9999;
-    display: flex;
-    justify-content: center;
-}
-
-.resizer-left::after {
-    content: "";
-    width: 2px;
-    height: 100%;
-    background-color: transparent;
-    transition: background-color 0.2s;
+#docx-container img {
+    max-width: 100%;
+    height: auto;
 }
 
 /* 11. 图片预览交互 */
 .preview-img-container {
     position: relative;
     display: inline-block;
-    cursor: default; /* 不再显示放大手型 */
+    cursor: default;
     border-radius: 0.5rem;
     overflow: hidden;
 }
@@ -253,7 +275,7 @@ button:focus {
     opacity: 0;
     transition: all 0.2s ease;
     backdrop-filter: blur(4px);
-    cursor: pointer; /* 按钮本身还是要有手型 */
+    cursor: pointer;
 }
 
 .preview-img-container:hover .img-zoom-btn {
@@ -269,24 +291,89 @@ button:focus {
     color: white;
     font-size: 1rem;
 }
-    width: 100% !important;
-    overflow-x: hidden;
-}
-#docx-container .docx-wrapper {
-    background: transparent !important;
-    padding: 0 !important;
-    margin: 0 !important;
-}
-#docx-container .docx {
-    box-shadow: none !important;
-    margin: 0 !important;
-    padding: 0 !important; /* 已经由父级 p-6 控制 */
-    width: 100% !important;
-    min-height: auto !important;
-    background: transparent !important;
-}
-#docx-container img {
-    max-width: 100%;
-    height: auto;
+
+/* 12. 侧边栏会话菜单 */
+#session-context-menu {
+    animation: fadeInUp 0.2s ease-out;
 }
 
+.sidebar-text {
+    transition: opacity 0.2s ease-in-out;
+}
+
+aside.collapsed .sidebar-text {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Sidebar Collapsed Overrides */
+aside {
+    overflow: visible !important; /* Allow toggle button to hang out */
+}
+
+aside.collapsed .sidebar-header {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    justify-content: center;
+}
+
+aside.collapsed .sidebar-footer {
+    padding: 1rem 0.25rem !important;
+}
+
+aside.collapsed .sidebar-user-card {
+    padding: 0.5rem !important;
+    justify-content: center;
+}
+
+aside.collapsed .sidebar-user-card > div:first-child {
+    margin-right: 0; /* Remove margin between avatar and text */
+}
+
+aside.collapsed .sidebar-action-bar {
+    padding-left: 0.25rem !important;
+    padding-right: 0.25rem !important;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+aside.collapsed #new-chat-btn {
+    padding: 0.5rem !important;
+    justify-content: center;
+}
+
+aside.collapsed #new-chat-btn span {
+    display: none; /* Ensure text is gone */
+}
+
+aside.collapsed #new-chat-btn i {
+    margin: 0;
+}
+
+aside.collapsed #search-btn {
+    width: 100%;
+}
+
+/* Font Size Settings */
+body.text-lg-mode .msg-bubble {
+    font-size: 1.1rem !important;
+    line-height: 1.8 !important;
+}
+
+body.text-lg-mode .markdown-body p,
+body.text-lg-mode .markdown-body li {
+    font-size: 1.1rem !important;
+}
+
+/* Density Settings */
+body.density-compact .msg-bubble {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.9rem;
+}
+body.density-compact .msg-wrapper {
+    margin-bottom: 1rem !important;
+}
+body.density-compact .avatar {
+    width: 24px;
+    height: 24px;
+}

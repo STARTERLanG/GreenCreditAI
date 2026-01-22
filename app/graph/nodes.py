@@ -2,7 +2,8 @@ import json
 import re
 from typing import Any
 
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import AIMessage
+from langchain_core.runnables import RunnableConfig
 
 from app.agents.auditor import auditor_agent
 from app.agents.chat import chat_agent
@@ -15,17 +16,16 @@ from app.services.llm_factory import llm_factory
 
 
 # --- 1. Router Node ---
-async def router_node(state: GreenCreditState) -> dict[str, Any]:
+async def router_node(state: GreenCreditState, config: RunnableConfig) -> dict[str, Any]:
     """判定意图"""
     from app.services.session_service import session_service
-
     history = session_service.get_chat_history(state["session_id"], limit=3)
     intent = await router_agent.route(state["user_query"], chat_history=history)
     return {"current_intent": intent.value}
 
 
-# --- 2. Extractor Node (Chain) ---
-async def extractor_node(state: GreenCreditState) -> dict[str, Any]:
+# --- 2. Extractor Node ---
+async def extractor_node(state: GreenCreditState, config: RunnableConfig) -> dict[str, Any]:
     """信息提取"""
     if not state.get("uploaded_documents"):
         return {"analysis_history": ["当前无上传文件"]}
@@ -35,7 +35,8 @@ async def extractor_node(state: GreenCreditState) -> dict[str, Any]:
     prompt = Prompts.EXTRACTOR_SYSTEM.format(content=all_docs_content[:30000])
 
     try:
-        res = await llm.ainvoke(prompt)
+        # 恢复标准调用，不做特殊屏蔽，交由 WorkflowService 过滤
+        res = await llm.ainvoke(prompt, config=config)
         data = extract_json(res.content)
         return {
             "company_name": data.get("company_name"),
@@ -49,7 +50,7 @@ async def extractor_node(state: GreenCreditState) -> dict[str, Any]:
 
 
 # --- 3. Auditor Node ---
-async def auditor_node(state: GreenCreditState) -> dict[str, Any]:
+async def auditor_node(state: GreenCreditState, config: RunnableConfig) -> dict[str, Any]:
     """审计决策智能体节点"""
     info_summary = f"""
     - 借款企业: {state.get("company_name") or "未知"}
@@ -59,35 +60,62 @@ async def auditor_node(state: GreenCreditState) -> dict[str, Any]:
     """
 
     user_input = f"""
-    当前信息摘要：
+    【当前信息摘要】
     {info_summary}
-    用户最新指令：{state.get("user_query")}
+    
+    【用户最新指令】
+    {state.get('user_query')}
 
-    请开始审计决策。
+    请先使用工具核实企业背景，然后调用 submit_audit_result 提交结论。
     """
 
-    # create_agent 返回的是 Graph，输入是 messages 列表
-    res = await auditor_agent.ainvoke({"messages": [HumanMessage(content=user_input)]})
-    # 提取最后一条消息
-    content = res["messages"][-1].content
+    # 恢复标准调用
+    res = await auditor_agent.ainvoke(
+        {"messages": [{"role": "user", "content": user_input}]},
+        config=config
+    )
 
-    data = extract_json(content)
-    if not data:
-        return {"final_report": "审核遇到异常，请重试。", "is_completed": True}
+    # 结果解析逻辑保持不变 (从 Tool Calls 中提取)
+    last_msg = res["messages"][-1]
+    decision_data = None
 
-    if data.get("status") == "PASS":
+    if isinstance(last_msg, AIMessage) and last_msg.tool_calls:
+        for tool_call in last_msg.tool_calls:
+            if tool_call["name"] == "submit_audit_result":
+                decision_data = tool_call["args"]
+                break
+
+    if not decision_data:
+        for msg in reversed(res["messages"]):
+            if isinstance(msg, AIMessage) and msg.tool_calls:
+                for tool_call in msg.tool_calls:
+                    if tool_call["name"] == "submit_audit_result":
+                        decision_data = tool_call["args"]
+                        break
+            if decision_data: break
+
+    if not decision_data:
+        return {
+            "final_report": last_msg.content if last_msg.content else "审核未完成，请重试。",
+            "is_completed": True
+        }
+
+    status = decision_data.get("status")
+    guide_message = decision_data.get("guide_message")
+
+    if status == "PASS":
         return {"is_completed": False, "analysis_history": ["审计通过。"]}
     else:
         return {
-            "final_report": data.get("guide_message", "请补充材料。"),
-            "missing_materials": data.get("missing_items", []),
+            "final_report": guide_message,
+            "missing_materials": decision_data.get("missing_items", []),
             "is_completed": True,
-            "analysis_history": [f"审计拦截: {data.get('reason')}"],
+            "analysis_history": [f"审计拦截: {decision_data.get('reason')}"],
         }
 
 
 # --- 4. Policy Enrichment Node ---
-async def policy_enrichment_node(state: GreenCreditState) -> dict[str, Any]:
+async def policy_enrichment_node(state: GreenCreditState, config: RunnableConfig) -> dict[str, Any]:
     """政策专家智能体节点"""
     company = state.get("company_name", "未知企业")
     purpose = state.get("loan_purpose", "未知用途")
@@ -101,8 +129,15 @@ async def policy_enrichment_node(state: GreenCreditState) -> dict[str, Any]:
     请开始合规性分析。
     """
 
-    res = await policy_agent.ainvoke({"messages": [HumanMessage(content=user_input)]})
-    final_report = res["messages"][-1].content
+    # 恢复标准调用
+    res = await policy_agent.ainvoke(
+        {"messages": [{"role": "user", "content": user_input}]},
+        config=config
+    )
+
+    final_report = "分析失败"
+    if "messages" in res and res["messages"]:
+        final_report = str(res["messages"][-1].content)
 
     return {
         "final_report": final_report,
@@ -112,7 +147,7 @@ async def policy_enrichment_node(state: GreenCreditState) -> dict[str, Any]:
 
 
 # --- 5. Chat Node ---
-async def chat_node(state: GreenCreditState) -> dict[str, Any]:
+async def chat_node(state: GreenCreditState, config: RunnableConfig) -> dict[str, Any]:
     """闲聊智能体节点"""
     from app.services.session_service import session_service
 
@@ -123,10 +158,14 @@ async def chat_node(state: GreenCreditState) -> dict[str, Any]:
     [对话历史]
     {history_text}
 
-    用户输入：{state["user_query"]}
+    用户输入：{state['user_query']}
     """
 
-    res = await chat_agent.ainvoke({"messages": [HumanMessage(content=user_input)]})
+    res = await chat_agent.ainvoke(
+        {"messages": [{"role": "user", "content": user_input}]},
+        config=config
+    )
+
     return {"final_report": res["messages"][-1].content, "is_completed": True}
 
 
@@ -135,7 +174,7 @@ def extract_json(text: str) -> dict:
     if not text or not text.strip():
         return {}
     try:
-        match = re.search(r"```json\s*(\{.*\})\s*```", text, re.DOTALL)
+        match = re.search(r"```json\s*(\{.*?\})\s*```", text, re.DOTALL)
         if match:
             return json.loads(match.group(1))
         match = re.search(r"(\{.*\})", text, re.DOTALL)
