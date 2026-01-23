@@ -70,8 +70,17 @@ async def auditor_node(state: GreenCreditState, config: RunnableConfig) -> dict[
     请先使用工具核实企业背景，然后调用 submit_audit_result 提交结论。
     """
 
+    # 动态构建 Agent (如果有自定义工具)
+    custom_tools = state.get("custom_tools")
+    if custom_tools:
+        from app.agents.auditor import get_auditor_agent
+
+        agent = get_auditor_agent(custom_tools)
+    else:
+        agent = auditor_agent
+
     # 恢复标准调用
-    res = await auditor_agent.ainvoke({"messages": [{"role": "user", "content": user_input}]}, config=config)
+    res = await agent.ainvoke({"messages": [{"role": "user", "content": user_input}]}, config=config)
 
     # 结果解析逻辑保持不变 (从 Tool Calls 中提取)
     last_msg = res["messages"][-1]

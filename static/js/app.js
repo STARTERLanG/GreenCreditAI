@@ -15,6 +15,25 @@ window.onerror = function(msg, url, line, col, error) {
     return false;
 };
 
+window.showToast = (msg, type = 'info') => {
+    const container = document.getElementById('toast-container');
+    if (!container) return alert(msg);
+    
+    const div = document.createElement('div');
+    const colors = type === 'error' ? 'bg-red-500 text-white' : 'bg-emerald-600 text-white';
+    const icon = type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle';
+    
+    div.className = `${colors} px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 min-w-[200px] animate-fade-in-up pointer-events-auto transition-all transform hover:scale-105`;
+    div.innerHTML = `<i class="fas ${icon}"></i> <span class="text-sm font-medium">${msg}</span>`;
+    
+    container.appendChild(div);
+    
+    setTimeout(() => {
+        div.classList.add('opacity-0', 'translate-x-full');
+        setTimeout(() => div.remove(), 300);
+    }, 3000);
+};
+
 // --- 1. Utils & Helpers ---
 function generateUUID() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -154,7 +173,14 @@ const dom = {
     sidebarUserAvatar: document.getElementById('sidebar-user-avatar'),
     settingUserName: document.getElementById('setting-user-name'),
     settingUserAvatar: document.getElementById('setting-user-avatar'),
-    uploadAvatarInput: document.getElementById('upload-avatar-input')
+    uploadAvatarInput: document.getElementById('upload-avatar-input'),
+    
+    // MCP DOM
+    mcpEditorContainer: document.getElementById('mcp-editor-container'),
+    mcpList: document.getElementById('mcp-list'),
+    mcpEditorTitle: document.getElementById('mcp-editor-title'),
+    editMcpId: document.getElementById('edit-mcp-id'),
+    editMcpJson: document.getElementById('edit-mcp-json')
 };
 
 // --- Settings Logic ---
@@ -168,7 +194,8 @@ const defaultSettings = {
         role: '信贷审批部',
         avatar: '/static/img/user-avatar.svg'
     },
-    customApis: []
+    customApis: [],
+    mcpServers: []
 };
 let appSettings = JSON.parse(localStorage.getItem('app_settings')) || defaultSettings;
 
@@ -278,6 +305,9 @@ function updateSettingsUI() {
     // Custom APIs
     renderApiList();
     
+    // MCP Servers
+    renderMcpList();
+    
     // User Profile
     if (appSettings.userProfile) {
         if (dom.settingUserName) dom.settingUserName.value = appSettings.userProfile.name;
@@ -285,18 +315,248 @@ function updateSettingsUI() {
     }
 }
 
-window.toggleApiTool = (id) => {
+// --- Backend Config Sync ---
+async function fetchSettings() {
+    try {
+        const res = await fetch('/api/v1/config/settings');
+        if (res.ok) {
+            const data = await res.json();
+            // 解析 JSON 字符串回对象
+            if (data.font_size) appSettings.fontSize = data.font_size;
+            if (data.density) appSettings.density = data.density;
+            if (data.auto_expand_cot) appSettings.autoExpandCoT = JSON.parse(data.auto_expand_cot);
+            if (data.audit_mode) appSettings.auditMode = data.audit_mode;
+            if (data.user_profile) appSettings.userProfile = JSON.parse(data.user_profile);
+            
+            // 应用设置
+            applySettings();
+        }
+    } catch (e) { console.error("Fetch settings failed", e); }
+}
+
+async function fetchTools() {
+    try {
+        const res = await fetch('/api/v1/config/tools');
+        if (res.ok) {
+            const rawTools = await res.json();
+            appSettings.customApis = rawTools.map(t => {
+                let examples = [];
+                if (t.examples) {
+                    try { examples = JSON.parse(t.examples); } catch(e) {}
+                }
+                return { ...t, examples: examples };
+            });
+            renderApiList();
+        }
+    } catch (e) { console.error("Fetch tools failed", e); }
+}
+
+async function fetchMcp() {
+    try {
+        const res = await fetch('/api/v1/config/mcp');
+        if (res.ok) {
+            const rawServers = await res.json();
+            appSettings.mcpServers = rawServers.map(s => {
+                let args = [];
+                let env = {};
+                if (s.args) { try { args = JSON.parse(s.args); } catch(e){} }
+                if (s.env) { try { env = JSON.parse(s.env); } catch(e){} }
+                return { ...s, args: args, env: env };
+            });
+            renderMcpList();
+        }
+    } catch (e) { console.error("Fetch MCP failed", e); }
+}
+
+async function loadBackendConfig() {
+    // 首先加载核心设置，再加载工具列表
+    await fetchSettings();
+    await Promise.all([fetchTools(), fetchMcp()]);
+}
+
+// --- MCP Logic ---
+window.loadMcpTemplate = (type) => {
+    let tpl = {};
+    if (type === 'stdio') {
+        tpl = {
+            "name": "filesystem",
+            "type": "stdio",
+            "command": "npx",
+            "args": ["-y", "@modelcontextprotocol/server-filesystem", "./data"],
+            "env": {}
+        };
+    } else {
+        tpl = {
+            "name": "remote-server",
+            "type": "sse",
+            "command": "http://localhost:3000/sse",
+            "env": {}
+        };
+    }
+    dom.editMcpJson.value = JSON.stringify(tpl, null, 2);
+};
+
+window.openMcpEditor = (id = null) => {
+    dom.mcpEditorContainer.classList.remove('hidden');
+    if (id) {
+        const srv = appSettings.mcpServers.find(s => s.id === id);
+        if (srv) {
+            dom.editMcpId.value = srv.id;
+            // Clone to avoid circular reference and remove internal ID
+            const { id: _, enabled: __, ...config } = srv;
+            dom.editMcpJson.value = JSON.stringify(config, null, 2);
+            dom.mcpEditorTitle.innerText = "编辑 MCP 服务";
+        }
+    } else {
+        dom.editMcpId.value = '';
+        window.loadMcpTemplate('stdio');
+        dom.mcpEditorTitle.innerText = "配置 MCP 服务";
+    }
+};
+
+window.closeMcpEditor = () => {
+    dom.mcpEditorContainer.classList.add('hidden');
+};
+
+window.saveMcpServer = async () => {
+    const id = dom.editMcpId.value;
+    let config;
+    try {
+        config = JSON.parse(dom.editMcpJson.value);
+    } catch (e) { return window.showToast("JSON 格式错误", 'error'); }
+    
+    if (!config.name) return window.showToast("配置中必须包含 name 字段", 'error');
+    if (!config.type || !['stdio', 'sse'].includes(config.type)) return window.showToast("配置中必须包含有效的 type (stdio/sse)", 'error');
+    if (!config.command) return window.showToast("配置中必须包含 command 字段", 'error');
+
+    // Preserve enabled state
+    let isEnabled = true;
+    if (id && appSettings.mcpServers) {
+        const existing = appSettings.mcpServers.find(s => s.id === id);
+        if (existing && existing.enabled !== undefined) isEnabled = existing.enabled;
+    }
+
+    const newServer = {
+        id: id || generateUUID(),
+        ...config,
+        enabled: isEnabled
+    };
+    
+    // Backend Save
+    try {
+        const res = await fetch('/api/v1/config/mcp', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(newServer)
+        });
+        
+        if (res.ok) {
+            await fetchMcp(); // Refresh local cache
+            saveSettings(); // Update localStorage backup if needed
+            closeMcpEditor();
+            window.showToast("保存成功", 'success');
+        } else {
+            window.showToast("保存失败", 'error');
+        }
+    } catch (e) { window.showToast("网络错误: " + e.message, 'error'); }
+};
+
+window.toggleMcpServer = async (id) => {
+    const srv = appSettings.mcpServers.find(s => s.id === id);
+    if (srv) {
+        srv.enabled = (srv.enabled === false) ? true : false;
+        await fetch('/api/v1/config/mcp', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(srv)
+        });
+        await fetchMcp();
+        window.syncBackendConfig();
+    }
+};
+
+window.deleteMcpServer = (id) => {
+    const srv = appSettings.mcpServers.find(s => s.id === id);
+    const title = srv ? srv.name : 'Unknown Service';
+    openDeleteModal(id, title, 'mcp_server'); 
+};
+
+function renderMcpList() {
+    if (!dom.mcpList) return;
+    dom.mcpList.innerHTML = '';
+    const servers = appSettings.mcpServers || [];
+    
+    if (servers.length === 0) {
+        dom.mcpList.innerHTML = `
+            <div id="mcp-list-empty" class="text-center py-12 bg-white rounded-xl border border-dashed border-slate-300">
+                <div class="w-12 h-12 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-3 text-xl"><i class="fas fa-network-wired"></i></div>
+                <h4 class="text-slate-600 font-bold text-sm">暂无 MCP 服务</h4>
+                <p class="text-[10px] text-slate-400 mt-1">点击上方“添加服务”连接外部能力</p>
+            </div>`;
+        return;
+    }
+
+    servers.forEach(srv => {
+        const div = document.createElement('div');
+        div.className = 'bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between transition-all hover:shadow-md hover:border-blue-300 group';
+        
+        const isEnabled = srv.enabled !== false;
+        const contentOpacity = isEnabled ? '' : 'opacity-50 grayscale';
+        
+        const iconClass = srv.type === 'stdio' ? 'fa-terminal' : 'fa-cloud';
+        const bgClass = srv.type === 'stdio' ? 'bg-slate-800 text-white' : 'bg-blue-100 text-blue-600';
+        
+        div.innerHTML = `
+            <div class="flex items-center gap-4 overflow-hidden ${contentOpacity} transition-all duration-300">
+                <div class="w-10 h-10 rounded-lg ${bgClass} flex items-center justify-center text-sm flex-shrink-0">
+                    <i class="fas ${iconClass}"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <div class="text-sm font-bold text-slate-800 truncate">${srv.name}</div>
+                        <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 opacity-80 uppercase">${srv.type}</span>
+                    </div>
+                    <div class="text-xs text-slate-500 truncate mt-0.5 font-mono opacity-70" title="${srv.command}">${srv.command}</div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-4 flex-shrink-0">
+                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity border-r border-slate-100 pr-3">
+                    <button onclick="window.openMcpEditor('${srv.id}')" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="编辑">
+                        <i class="fas fa-pencil-alt text-xs"></i>
+                    </button>
+                    <button onclick="window.deleteMcpServer('${srv.id}')" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="删除">
+                        <i class="fas fa-trash-alt text-xs"></i>
+                    </button>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer" title="${isEnabled ? '禁用服务' : '启用服务'}">
+                    <input type="checkbox" class="sr-only peer" ${isEnabled ? 'checked' : ''} onchange="window.toggleMcpServer('${srv.id}')">
+                    <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                </label>
+            </div>
+        `;
+        dom.mcpList.appendChild(div);
+    });
+}
+
+window.toggleApiTool = async (id) => {
     const api = appSettings.customApis.find(a => a.id === id);
     if (api) {
-        api.enabled = api.enabled === undefined ? false : !api.enabled; // Default was true, so if undefined (new) -> toggle to false? No.
-        // If undefined, it means it's effectively true. So toggle makes it false.
-        // If it is false, toggle makes it true.
-        // Better:
-        if (api.enabled === undefined) api.enabled = false; // Toggle from implicit true
-        else api.enabled = !api.enabled;
+        api.enabled = (api.enabled === false) ? true : false;
         
-        saveSettings();
-        renderApiList(); // Re-render to update styles
+        const updatePayload = {
+            ...api,
+            examples: JSON.stringify(api.examples)
+        };
+
+        await fetch('/api/v1/config/tools', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(updatePayload)
+        });
+        
+        await fetchTools();
+        window.syncBackendConfig();
     }
 };
 
@@ -403,6 +663,28 @@ window.addParamRow = (name = '', type = 'string', required = false, desc = '') =
         <div class="col-span-1 text-center"><button onclick="this.closest('.param-row').remove()" class="text-slate-400 hover:text-red-500 transition-colors"><i class="fas fa-trash-alt"></i></button></div>
     `;
     dom.paramsContainer.appendChild(div);
+};
+
+window.syncBackendConfig = async () => {
+    try {
+        const activeTools = (appSettings.customApis || []).filter(tool => tool.enabled !== false);
+        const activeMcp = (appSettings.mcpServers || []).filter(srv => srv.enabled !== false);
+        
+        const res = await fetch('/api/v1/chat/config/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: "config_sync",
+                session_id: currentSessionId,
+                custom_tools: activeTools,
+                mcp_servers: activeMcp
+            })
+        });
+        const data = await res.json();
+        console.log("[Config] Synced with backend. Status:", res.status, "Response:", data);
+    } catch (e) {
+        console.warn("[Config] Sync failed:", e);
+    }
 };
 
 window.addExampleRow = (text = '') => {
@@ -559,10 +841,10 @@ window.closeApiEditor = () => {
     dom.btnAddApiTool.classList.remove('hidden');
 };
 
-window.saveApiTool = () => {
+window.saveApiTool = async () => {
     const id = dom.editApiId.value;
     const name = dom.editApiName.value.trim();
-    if (!name) return alert("请输入工具名称");
+    if (!name) return window.showToast("请输入工具名称", 'error');
     
     // Preserve enabled state
     let isEnabled = true;
@@ -616,22 +898,26 @@ window.saveApiTool = () => {
         url: dom.editApiUrl.value,
         headers: JSON.stringify(headers),
         params: JSON.stringify(paramsSchema),
-        examples: examples,
+        examples: examples, 
         enabled: isEnabled
     };
     
-    if (!appSettings.customApis) appSettings.customApis = [];
-    
-    if (id) {
-        const idx = appSettings.customApis.findIndex(a => a.id === id);
-        if (idx > -1) appSettings.customApis[idx] = newApi;
-    } else {
-        appSettings.customApis.push(newApi);
-    }
-    
-    saveSettings();
-    closeApiEditor();
-    renderApiList();
+    try {
+        const res = await fetch('/api/v1/config/tools', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(newApi)
+        });
+        
+        if (res.ok) {
+            await fetchTools();
+            closeApiEditor();
+            window.syncBackendConfig();
+            window.showToast("保存成功", 'success');
+        } else {
+            window.showToast("保存失败", 'error');
+        }
+    } catch (e) { window.showToast("网络错误: " + e.message, 'error'); }
 };
 
 window.deleteApiTool = (id) => {
@@ -641,6 +927,15 @@ window.deleteApiTool = (id) => {
 };
 
 window.editApiTool = window.openApiEditor; // Alias
+
+window.formatJson = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    try {
+        const val = JSON.parse(el.value);
+        el.value = JSON.stringify(val, null, 2);
+    } catch (e) { alert("Invalid JSON"); }
+};
 
 function updateButtonGroup(group, activeVal, activeClass, inactiveClass) {
     const btns = group.querySelectorAll('button');
@@ -654,9 +949,31 @@ function updateButtonGroup(group, activeVal, activeClass, inactiveClass) {
     });
 }
 
-function saveSettings() {
+async function saveSettings() {
+    // 1. 同步保存到 LocalStorage (作为快速恢复的备份)
     localStorage.setItem('app_settings', JSON.stringify(appSettings));
+    
+    // 2. 应用到界面
     applySettings();
+    
+    // 3. 异步持久化到后端数据库
+    try {
+        const payload = {
+            font_size: appSettings.fontSize,
+            density: appSettings.density,
+            auto_expand_cot: JSON.stringify(appSettings.autoExpandCoT),
+            audit_mode: appSettings.auditMode,
+            user_profile: JSON.stringify(appSettings.userProfile)
+        };
+        
+        await fetch('/api/v1/config/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+    } catch (e) {
+        console.error("Save settings to backend failed", e);
+    }
 }
 
 // Event Bindings
@@ -807,6 +1124,9 @@ function openDeleteModal(id, title, type = 'session') {
     } else if (type === 'api_tool') {
         if (dom.deleteModalTitle) dom.deleteModalTitle.innerText = `删除工具`;
         if (descEl) descEl.innerText = `您确定要删除自定义工具 "${title}" 吗？此操作无法撤销。`;
+    } else if (type === 'mcp_server') {
+        if (dom.deleteModalTitle) dom.deleteModalTitle.innerText = `删除服务`;
+        if (descEl) descEl.innerText = `您确定要删除 MCP 服务 "${title}" 吗？此操作无法撤销。`;
     } else {
         if (dom.deleteModalTitle) dom.deleteModalTitle.innerText = `删除会话`;
         if (descEl) descEl.innerText = `您确定要删除 "${title || '未命名'}" 吗？此操作无法撤销。`;
@@ -872,9 +1192,14 @@ if (dom.confirmDeleteBtn) {
                 location.reload(); 
             } else if (pendingDeleteType === 'api_tool') {
                 // 删除自定义工具
-                appSettings.customApis = appSettings.customApis.filter(a => a.id !== pendingDeleteId);
-                saveSettings();
-                renderApiList();
+                await fetch(`/api/v1/config/tools/${pendingDeleteId}`, { method: 'DELETE' });
+                await fetchTools();
+                window.syncBackendConfig();
+            } else if (pendingDeleteType === 'mcp_server') {
+                // 删除 MCP 服务
+                await fetch(`/api/v1/config/mcp/${pendingDeleteId}`, { method: 'DELETE' });
+                await fetchMcp();
+                window.syncBackendConfig();
             } else {
                 // 单个会话删除
                 await fetch(`/api/v1/chat/sessions/${pendingDeleteId}`, { method: 'DELETE' });
@@ -1119,7 +1444,8 @@ async function loadSessions() {
     try {
         const res = await fetch('/api/v1/chat/sessions');
         const sessions = await res.json();
-        if (!dom.sessionList) return; dom.sessionList.innerHTML = '';
+        if (!dom.sessionList) return []; 
+        dom.sessionList.innerHTML = '';
         sessions.forEach(s => {
             const isActive = s.id === currentSessionId;
             const div = document.createElement('div');
@@ -1135,7 +1461,8 @@ async function loadSessions() {
             dom.sessionList.appendChild(div);
         });
         if (isSidebarCollapsed) applyCollapsedState();
-    } catch (e) { }
+        return sessions;
+    } catch (e) { return []; }
 }
 
 async function loadSessionHistory(id) {
@@ -1232,9 +1559,23 @@ if (dom.sendBtn) {
         let isFirstToken = true;
 
         try {
+            // 只发送已启用的自定义工具和 MCP 服务
+            const activeTools = (appSettings.customApis || []).filter(tool => tool.enabled !== false);
+            const activeMcp = (appSettings.mcpServers || []).filter(srv => srv.enabled !== false);
+            
+            console.log("[Debug] Sending Tools:", activeTools);
+            console.log("[Debug] Sending MCP:", activeMcp);
+
             const response = await fetch('/api/v1/chat/completions', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: message, session_id: currentSessionId, file_hashes: attachedHashes, audit_mode: appSettings.auditMode })
+                body: JSON.stringify({ 
+                    message: message, 
+                    session_id: currentSessionId, 
+                    file_hashes: attachedHashes, 
+                    audit_mode: appSettings.auditMode, 
+                    custom_tools: activeTools,
+                    mcp_servers: activeMcp
+                })
             });
             const reader = response.body.getReader(); const decoder = new TextDecoder(); let buffer = "";
             while (true) {
@@ -1445,11 +1786,22 @@ window.addExampleRow = (text = '') => {
 window.onload = async () => {
     applySettings();
     renderWelcome();
-    await loadSessions();
+    const sessions = await loadSessions();
+    await loadBackendConfig();
+    
     const lastId = localStorage.getItem('last_session_id');
     if (lastId) {
-        currentSessionId = lastId;
-        await loadSessionHistory(lastId);
+        // 检查上一次的会话是否还存在于数据库中
+        const exists = sessions.some(s => s.id === lastId);
+        if (exists) {
+            currentSessionId = lastId;
+            await loadSessionHistory(lastId);
+        } else {
+            // 如果会话已被删除，清理本地缓存
+            localStorage.removeItem('last_session_id');
+            currentSessionId = generateUUID();
+            renderWelcome();
+        }
     }
 };
 

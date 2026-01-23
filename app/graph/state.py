@@ -1,5 +1,5 @@
 import operator
-from typing import Annotated, TypedDict
+from typing import Annotated, Any, TypedDict
 
 
 class GreenCreditState(TypedDict):
@@ -27,3 +27,4 @@ class GreenCreditState(TypedDict):
     next_node: str  # 手动控制流向 (可选)
     current_intent: str  # router 判定出的意图
     is_completed: bool  # 任务是否结束
+    custom_tools: list[Any]  # 动态工具定义

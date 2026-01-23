@@ -48,6 +48,7 @@ class WorkflowService:
             "uploaded_documents": new_docs,
             "session_id": session_id,
             "is_completed": False,
+            "custom_tools": request.custom_tools,
         }
 
         # 0. 检查是否需要生成标题 (Fix: Check BEFORE appending user message)
@@ -72,6 +73,11 @@ class WorkflowService:
         logger.info(
             f"[Workflow] Processing Request | Session: {session_id} | Input: {user_input[:50]}... | Docs: {len(new_docs)}"
         )
+
+        if request.mcp_servers:
+            logger.info(f"[Workflow] Received {len(request.mcp_servers)} MCP Servers configuration.")
+            for srv in request.mcp_servers:
+                logger.info(f"  - MCP Server: {srv.name} ({srv.type}) -> {srv.command}")
 
         # 发送初始状态
         yield self._pack_event("status_update", {"text": "系统已接收请求，准备开始处理..."})

@@ -23,6 +23,24 @@ async def get_session_detail(session_id: str):
     return session_data
 
 
+@router.post("/config/sync")
+async def sync_config(request: ChatRequest):
+    """同步前端配置，用于预热工具或验证 MCP 连接"""
+    from app.core.logging import logger
+
+    logger.info(f"[Config] Syncing configuration for session: {request.session_id}")
+    if request.mcp_servers:
+        names = [s.name for s in request.mcp_servers]
+        logger.info(f"[Config] Received {len(names)} MCP Servers: {names}")
+        # TODO: Initialize/Test MCP connections here
+
+    if request.custom_tools:
+        names = [t.name for t in request.custom_tools]
+        logger.info(f"[Config] Received {len(names)} Custom Tools: {names}")
+
+    return {"status": "synced", "mcp_count": len(request.mcp_servers), "tool_count": len(request.custom_tools)}
+
+
 @router.post("/completions")
 async def chat_completions(request: ChatRequest):
     """

@@ -238,7 +238,7 @@
                             <button
                                 class="settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-slate-900 transition-all"
                                 data-target="settings-api">
-                                <i class="fas fa-magic w-5 text-center mr-3"></i> 自定义工具
+                                <i class="fas fa-magic w-5 text-center mr-3"></i> API 工具
                             </button>
                             <div class="h-px bg-slate-200/50 my-4 mx-2"></div>
                             <button
@@ -475,63 +475,78 @@
 
                     <!-- Section: MCP -->
                     <section id="settings-mcp" class="settings-section space-y-8 fade-in-up hidden">
-                        <div>
-                            <h3 class="text-xl font-bold text-slate-800 mb-1">Model Context Protocol (MCP)</h3>
-                            <p class="text-sm text-slate-500">连接外部数据源与工具，扩展 AI 能力边界</p>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-800 mb-1">Model Context Protocol (MCP)</h3>
+                                <p class="text-sm text-slate-500">连接外部数据源与工具，扩展 AI 能力边界</p>
+                            </div>
+                            <button onclick="window.openMcpEditor()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg shadow-sm transition-all flex items-center gap-2 active:scale-95">
+                                <i class="fas fa-plus"></i> 添加服务
+                            </button>
                         </div>
                         
+                        <!-- Info Box -->
                         <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-4 items-start">
                             <div class="text-blue-600 mt-1"><i class="fas fa-plug text-xl"></i></div>
                             <div>
                                 <h4 class="text-sm font-bold text-blue-800">什么是 MCP?</h4>
-                                <p class="text-xs text-blue-600/80 mt-1 leading-relaxed">MCP 是一种开放协议，允许 AI 模型安全地访问本地或远程的数据源（如数据库、文件系统、API）。配置 MCP 服务器后，助手可以自动调用相关工具。</p>
+                                <p class="text-xs text-blue-600/80 mt-1 leading-relaxed">MCP 是一种开放标准协议。通过配置 MCP Server，您可以让 AI 安全地访问本地文件、数据库或远程服务，而无需编写专门的 Tool 代码。</p>
                             </div>
                         </div>
 
-                        <div class="space-y-4">
-                            <div class="flex items-center justify-between">
-                                <h4 class="text-sm font-bold text-slate-700">已连接服务</h4>
-                                <button class="text-xs font-medium text-emerald-600 hover:text-emerald-500 flex items-center gap-1">
-                                    <i class="fas fa-plus"></i> 添加服务
-                                </button>
+                        <!-- Editor Container (Hidden) -->
+                        <div id="mcp-editor-container" class="hidden bg-white p-6 rounded-2xl border border-blue-500 shadow-md ring-4 ring-blue-500/10 mb-6 transition-all">
+                            <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
+                                <h4 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                    <i class="fas fa-server text-blue-600"></i> <span id="mcp-editor-title">配置 MCP 服务</span>
+                                </h4>
+                                <button onclick="window.closeMcpEditor()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-lg"></i></button>
                             </div>
                             
-                            <!-- Server Card -->
-                            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                                <div class="flex items-center gap-4">
-                                    <div class="w-10 h-10 rounded-lg bg-slate-800 text-white flex items-center justify-center text-lg"><i class="fab fa-github"></i></div>
-                                    <div>
-                                        <div class="text-sm font-bold text-slate-800">GitHub MCP Server</div>
-                                        <div class="text-xs text-slate-500 flex items-center gap-2">
-                                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span> 运行中
+                            <div class="space-y-5">
+                                <input type="hidden" id="edit-mcp-id">
+                                
+                                <!-- JSON Editor -->
+                                <div>
+                                    <div class="flex justify-between items-center mb-2">
+                                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider">Configuration (JSON)</label>
+                                        <div class="flex gap-2">
+                                            <button onclick="window.loadMcpTemplate('stdio')" class="text-[10px] text-slate-500 hover:text-blue-600">Stdio Template</button>
                                             <span class="text-slate-300">|</span>
-                                            v1.0.2
+                                            <button onclick="window.loadMcpTemplate('sse')" class="text-[10px] text-slate-500 hover:text-blue-600">SSE Template</button>
+                                            <span class="text-slate-300">|</span>
+                                            <button onclick="window.formatJson('edit-mcp-json')" class="text-[10px] text-blue-600 hover:underline font-bold">Format JSON</button>
                                         </div>
                                     </div>
+                                    <textarea id="edit-mcp-json" rows="12" class="w-full border border-slate-300 rounded-lg p-4 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-900 text-emerald-400 resize-none leading-relaxed" placeholder='{
+  "name": "filesystem",
+  "type": "stdio",
+  "command": "npx",
+  "args": ["-y", "@modelcontextprotocol/server-filesystem", "./data"],
+  "env": {}
+}'></textarea>
+                                    <p class="text-[10px] text-slate-400 mt-2">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        请直接粘贴 MCP 服务的完整配置 JSON。支持 <code>stdio</code> 和 <code>sse</code> 两种连接类型。
+                                    </p>
                                 </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" checked class="sr-only peer">
-                                    <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
-                                </label>
-                            </div>
 
-                            <!-- Server Card -->
-                            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                                <div class="flex items-center gap-4">
-                                    <div class="w-10 h-10 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-lg"><i class="fas fa-database"></i></div>
-                                    <div>
-                                        <div class="text-sm font-bold text-slate-800">PostgreSQL Adapter</div>
-                                        <div class="text-xs text-slate-500 flex items-center gap-2">
-                                            <span class="w-2 h-2 rounded-full bg-red-400"></span> 已停止
-                                            <span class="text-slate-300">|</span>
-                                            localhost:5432
-                                        </div>
-                                    </div>
+                                <!-- Actions -->
+                                <div class="pt-4 flex justify-end gap-3 border-t border-slate-100">
+                                    <button onclick="window.saveMcpServer()" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-lg shadow-md transition-all active:scale-95">
+                                        <i class="fas fa-save mr-2"></i> 保存配置
+                                    </button>
                                 </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" class="sr-only peer">
-                                    <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
-                                </label>
+                            </div>
+                        </div>
+
+                        <!-- List -->
+                        <div id="mcp-list" class="space-y-4">
+                            <!-- Injected via JS -->
+                            <div id="mcp-list-empty" class="text-center py-12 bg-white rounded-xl border border-dashed border-slate-300">
+                                <div class="w-12 h-12 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-3 text-xl"><i class="fas fa-network-wired"></i></div>
+                                <h4 class="text-slate-600 font-bold text-sm">暂无 MCP 服务</h4>
+                                <p class="text-[10px] text-slate-400 mt-1">点击上方“添加服务”连接外部能力</p>
                             </div>
                         </div>
                     </section>
@@ -540,7 +555,7 @@
                     <section id="settings-api" class="settings-section space-y-6 fade-in-up hidden">
                         <div class="flex items-center justify-between">
                             <div>
-                                <h3 class="text-xl font-bold text-slate-800 mb-1">自定义数据工具</h3>
+                                <h3 class="text-xl font-bold text-slate-800 mb-1">API 工具</h3>
                                 <p class="text-sm text-slate-500">配置 HTTP 接口，系统将自动生成 Python 工具供 AI 调用</p>
                             </div>
                             <button id="btn-add-api-tool" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg shadow-sm transition-all flex items-center gap-2 active:scale-95">
@@ -776,6 +791,9 @@
             <i class="fas fa-times text-2xl"></i>
         </button>
     </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed top-6 right-6 z-[100] flex flex-col gap-2 pointer-events-none"></div>
 
     <!-- App Logic -->
     <script src="/static/js/app.js" defer></script>
