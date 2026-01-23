@@ -12,6 +12,7 @@ class AuditResult(BaseModel):
     guide_message: str = Field(..., description="给用户的自然语言回复，解释结果并引导下一步")
     reason: str = Field(..., description="做出此判定的内部理由")
 
+
 @tool(args_schema=AuditResult)
 def submit_audit_result(status: str, missing_items: list, guide_message: str, reason: str):
     """

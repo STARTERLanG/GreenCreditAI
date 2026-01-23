@@ -1,15 +1,13 @@
-from langchain_community.tools.tavily_search import TavilySearchResults
 from langchain_core.tools import tool
+from langchain_tavily import TavilySearch
 
 from app.core.cache import tool_cache
 from app.core.config import settings
 from app.core.logging import logger
 
 # 原始 Tavily 工具实例
-_raw_tavily_tool = TavilySearchResults(
-    max_results=5,
-    tavily_api_key=settings.TAVILY_API_KEY
-)
+_raw_tavily_tool = TavilySearch(max_results=5, tavily_api_key=settings.TAVILY_API_KEY)
+
 
 @tool
 @tool_cache
@@ -27,4 +25,3 @@ async def web_search_tool(query: str) -> str:
     except Exception as e:
         logger.error(f"[Tool:WebSearch] Execution failed: {e}")
         return f"Search failed: {e}"
-

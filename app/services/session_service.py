@@ -27,6 +27,16 @@ class SessionService:
                 return True
             return False
 
+    def delete_all_sessions(self) -> bool:
+        """删除所有会话"""
+        with Session(engine) as session:
+            statement = select(ChatSession)
+            results = session.exec(statement)
+            for chat_session in results:
+                session.delete(chat_session)
+            session.commit()
+            return True
+
     def create_session(self, title: str = "新对话") -> ChatSession:
         """创建新会话"""
         with Session(engine) as session:
@@ -74,7 +84,9 @@ class SessionService:
             logger.error(f"Error parsing history for session {session_id}: {e}")
             return []
 
-    def append_message(self, session_id: str, role: str, content: str, attachments: list = None, thought_process: list = None):
+    def append_message(
+        self, session_id: str, role: str, content: str, attachments: list = None, thought_process: list = None
+    ):
         """追加消息到历史记录"""
         with Session(engine) as session:
             chat_session = session.get(ChatSession, session_id)

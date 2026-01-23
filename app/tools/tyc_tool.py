@@ -11,6 +11,7 @@ BASE_URL = "http://open.api.tianyancha.com"
 
 # 进程内缓存已移至通用模块
 
+
 async def fetch_tyc(session: aiohttp.ClientSession, endpoint: str, params: dict):
     # ... (保持不变) ...
     if not settings.TIANYANCHA_TOKEN:
@@ -37,6 +38,7 @@ async def fetch_tyc(session: aiohttp.ClientSession, endpoint: str, params: dict)
         logger.error(f"[Tool:TYC] Connection Error {endpoint}: {e}")
         return {"error": str(e)}
 
+
 @tool
 @tool_cache
 async def search_enterprise_info(company_name: str) -> str:
@@ -51,8 +53,14 @@ async def search_enterprise_info(company_name: str) -> str:
     async with aiohttp.ClientSession() as session:
         # 定义三个任务
         task_base = fetch_tyc(session, "/services/open/ic/baseinfo/normal", {"keyword": company_name})
-        task_abnormal = fetch_tyc(session, "/services/open/mr/abnormal/2.0", {"keyword": company_name, "pageNum": 1, "pageSize": 20})
-        task_holder = fetch_tyc(session, "/services/open/ic/holder/2.0", {"keyword": company_name, "pageNum": 1, "pageSize": 20, "source": 1})
+        task_abnormal = fetch_tyc(
+            session, "/services/open/mr/abnormal/2.0", {"keyword": company_name, "pageNum": 1, "pageSize": 20}
+        )
+        task_holder = fetch_tyc(
+            session,
+            "/services/open/ic/holder/2.0",
+            {"keyword": company_name, "pageNum": 1, "pageSize": 20, "source": 1},
+        )
 
         # 并发执行
         res_base, res_abnormal, res_holder = await asyncio.gather(task_base, task_abnormal, task_holder)
@@ -84,7 +92,7 @@ async def search_enterprise_info(company_name: str) -> str:
                 for idx, item in enumerate(items[:5], 1):
                     report += f"  {idx}. 列入日期: {item.get('putDate')}\n"
                     report += f"     原因: {item.get('putReason')}\n"
-                    if item.get('removeDate'):
+                    if item.get("removeDate"):
                         report += f"     [已移出] 移出日期: {item.get('removeDate')}\n"
             else:
                 report += "- 当前无经营异常记录。\n"
@@ -98,12 +106,12 @@ async def search_enterprise_info(company_name: str) -> str:
             report += "3. [股东结构]\n"
             if items:
                 for item in items[:5]:
-                    capital_info = item.get('capital', [])
+                    capital_info = item.get("capital", [])
                     percent = "未知"
                     if isinstance(capital_info, list) and capital_info:
-                        percent = capital_info[0].get('percent', '未知')
+                        percent = capital_info[0].get("percent", "未知")
                     elif isinstance(capital_info, dict):
-                        percent = capital_info.get('percent', '未知')
+                        percent = capital_info.get("percent", "未知")
                     report += f"- {item.get('name')}: 持股/出资 {percent}\n"
             else:
                 report += "- 未公开股东信息。\n"

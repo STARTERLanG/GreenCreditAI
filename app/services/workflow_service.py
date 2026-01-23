@@ -18,8 +18,8 @@ class WorkflowService:
         "router": "意图识别",
         "extractor": "信息提取",
         "auditor": "合规预审",
-        "policy_enrichment": "政策分析", # 注意：graph definition 里叫 policy_enrichment
-        "chat": "生成回复"
+        "policy_enrichment": "政策分析",  # 注意：graph definition 里叫 policy_enrichment
+        "chat": "生成回复",
     }
 
     def __init__(self):
@@ -50,20 +50,28 @@ class WorkflowService:
             "is_completed": False,
         }
 
+        # 0. 检查是否需要生成标题 (Fix: Check BEFORE appending user message)
+        should_generate_title = False
+        if session_id:
+            session = session_service.get_session(session_id)
+            # 如果 session 不存在(首条消息) 或 虽存在但历史为空(异常情况)且标题未改
+            if not session:
+                should_generate_title = True
+            elif session["title"] == "新对话":
+                # 只有当历史记录为空时才生成（避免多轮对话重复生成）
+                history = session.get("history", [])
+                if not history or len(history) == 0:
+                    should_generate_title = True
+
         if session_id:
             session_service.append_message(session_id, "user", user_input, attachments=attachments_data or None)
 
         full_ai_response = ""
-        thought_logs = [] # 仅用于持久化存储，不用于流式传输
-        should_generate_title = False
+        thought_logs = []  # 仅用于持久化存储，不用于流式传输
 
-        # 检查是否需要生成标题
-        if session_id:
-            session = session_service.get_session(session_id)
-            if not session or (session["title"] == "新对话" and (not session.get("history") or session["history"] == "[]")):
-                should_generate_title = True
-
-        logger.info(f"[Workflow] Processing Request | Session: {session_id} | Input: {user_input[:50]}... | Docs: {len(new_docs)}")
+        logger.info(
+            f"[Workflow] Processing Request | Session: {session_id} | Input: {user_input[:50]}... | Docs: {len(new_docs)}"
+        )
 
         # 发送初始状态
         yield self._pack_event("status_update", {"text": "系统已接收请求，准备开始处理..."})
@@ -72,9 +80,7 @@ class WorkflowService:
         try:
             # version="v2" 是 LangChain 1.0+ 标准事件流
             async for event in self._graph.astream_events(
-                inputs,
-                config={"configurable": {"thread_id": session_id}},
-                version="v2"
+                inputs, config={"configurable": {"thread_id": session_id}}, version="v2"
             ):
                 kind = event["event"]
                 node_name = event.get("metadata", {}).get("langgraph_node", "")
@@ -102,10 +108,10 @@ class WorkflowService:
                             is_reasoning = True
 
                         if is_reasoning:
-                             yield self._pack_event("thought_delta", {"delta": content})
+                            yield self._pack_event("thought_delta", {"delta": content})
                         else:
-                             full_ai_response += content
-                             yield self._pack_event("answer_delta", {"delta": content})
+                            full_ai_response += content
+                            yield self._pack_event("answer_delta", {"delta": content})
 
                 # --- B. 处理工具调用 (Tools) ---
                 elif kind == "on_tool_start":
@@ -114,9 +120,9 @@ class WorkflowService:
                             "id": event["run_id"],
                             "name": event["name"],
                             "input": event["data"].get("input"),
-                            "status": "running"
+                            "status": "running",
                         }
-                        thought_logs.append(log_entry) # 记录用于历史
+                        thought_logs.append(log_entry)  # 记录用于历史
                         yield self._pack_event("tool_start", log_entry)
 
                 elif kind == "on_tool_end":
@@ -125,15 +131,15 @@ class WorkflowService:
                             "id": event["run_id"],
                             "name": event["name"],
                             "output": str(event["data"].get("output")),
-                            "status": "completed"
+                            "status": "completed",
                         }
-                        
+
                         # 更新历史记录中的状态
                         for log in thought_logs:
-                             if isinstance(log, dict) and log.get("id") == log_entry["id"]:
-                                 log["output"] = log_entry["output"]
-                                 log["status"] = "completed"
-                                 break
+                            if isinstance(log, dict) and log.get("id") == log_entry["id"]:
+                                log["output"] = log_entry["output"]
+                                log["status"] = "completed"
+                                break
 
                         yield self._pack_event("tool_end", log_entry)
 
@@ -147,8 +153,8 @@ class WorkflowService:
                         thought_logs.append(msg)
 
                 elif kind == "on_custom_event":
-                     # 支持业务自定义事件
-                     yield self._pack_event("status_update", event["data"])
+                    # 支持业务自定义事件
+                    yield self._pack_event("status_update", event["data"])
 
         except Exception as e:
             logger.exception(f"Workflow Error: {e}")
@@ -171,22 +177,28 @@ class WorkflowService:
                 context = f"文件名: {', '.join(file_names)}" if file_names else ""
                 new_title = await summarizer_agent.generate_title(user_input, context=context)
                 session_service.update_title(session_id, new_title)
-            except Exception: pass
+            except Exception:
+                pass
 
         logger.info(f"[Workflow] Request Completed | Session: {session_id} | Generated: {len(full_ai_response)} chars")
         yield self._pack_event("done", "")
 
     def _pack_event(self, event_type: str, payload: Any) -> str:
         def clean_obj(obj):
-            if isinstance(obj, list): return [clean_obj(item) for item in obj]
-            if isinstance(obj, dict): return {k: clean_obj(v) for k, v in obj.items()}
-            if hasattr(obj, "to_json"): return obj.to_json()
-            if hasattr(obj, "content"): return str(obj.content)
+            if isinstance(obj, list):
+                return [clean_obj(item) for item in obj]
+            if isinstance(obj, dict):
+                return {k: clean_obj(v) for k, v in obj.items()}
+            if hasattr(obj, "to_json"):
+                return obj.to_json()
+            if hasattr(obj, "content"):
+                return str(obj.content)
             return str(obj) if not isinstance(obj, (str, int, float, bool, type(None))) else obj
 
         # 针对 text delta 做清洗，防止工具标签泄露
         if event_type == "answer_delta" and isinstance(payload, dict) and "delta" in payload:
             import re
+
             # 移除 <function=...> ... </function> 或者是 <function=...> 单标签
             # 以及 <parameter=...>
             text = payload["delta"]
@@ -195,11 +207,11 @@ class WorkflowService:
             # 由于流式截断问题，后端正则很难完美。
             # 但 Qwen 的 leakage 通常是一个完整的 chunk。
             if "<function=" in text or "<parameter=" in text:
-                 # 这种情况下通常是模型抽风了，把 tool call 当文本输出了。
-                 # 我们选择直接丢弃包含这些 tag 的 chunk，或者 try replace。
-                 text = re.sub(r"<function=[^>]+>", "", text)
-                 text = re.sub(r"<parameter=[^>]+>", "", text)
-                 payload["delta"] = text
+                # 这种情况下通常是模型抽风了，把 tool call 当文本输出了。
+                # 我们选择直接丢弃包含这些 tag 的 chunk，或者 try replace。
+                text = re.sub(r"<function=[^>]+>", "", text)
+                text = re.sub(r"<parameter=[^>]+>", "", text)
+                payload["delta"] = text
 
         data = {"event": event_type, "payload": clean_obj(payload)}
         try:
@@ -208,5 +220,6 @@ class WorkflowService:
         except Exception as e:
             logger.error(f"JSON Pack Error: {e}")
             return 'data: { "event": "error", "payload": "数据序列化失败" }\n\n'
+
 
 workflow_service = WorkflowService()

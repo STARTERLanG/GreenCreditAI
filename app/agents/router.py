@@ -18,18 +18,14 @@ class RouterAgent:
         logger.info(f"Routing user input: {user_input[:50]}...")
 
         # 构建 Prompt
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", Prompts.ROUTER_SYSTEM),
-            ("human", "历史记录：{chat_history}\n当前输入：{input}")
-        ])
+        prompt = ChatPromptTemplate.from_messages(
+            [("system", Prompts.ROUTER_SYSTEM), ("human", "历史记录：{chat_history}\n当前输入：{input}")]
+        )
 
         chain = prompt | self.llm | self.parser
 
         try:
-            raw_intent = await chain.ainvoke(
-                {"input": user_input, "chat_history": chat_history or []},
-                config=config
-            )
+            raw_intent = await chain.ainvoke({"input": user_input, "chat_history": chat_history or []}, config=config)
             # 清理输出并转换为 Enum
             intent_str = raw_intent.strip()
             logger.info(f"Router raw output: {intent_str}")

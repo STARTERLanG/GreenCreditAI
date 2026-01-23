@@ -9,5 +9,5 @@ from app.tools.tyc_tool import search_enterprise_info
 auditor_agent = create_agent(
     model=llm_factory.get_expert_model(),
     tools=[search_enterprise_info, submit_audit_result],
-    system_prompt=Prompts.AUDITOR_SYSTEM
+    system_prompt=Prompts.AUDITOR_SYSTEM,
 )

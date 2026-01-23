@@ -16,7 +16,7 @@ async def lifespan(app: FastAPI):
     logger.info(f"Starting {settings.APP_ENV} environment...")
 
     try:
-        init_db() # 初始化业务数据库表
+        init_db()  # 初始化业务数据库表
         logger.info("Database initialized successfully.")
     except Exception as e:
         logger.error(f"Database initialization failed (likely locked): {e}")
@@ -25,6 +25,7 @@ async def lifespan(app: FastAPI):
     yield
     # 关闭时的逻辑
     logger.info("Shutting down...")
+
 
 app = FastAPI(
     title="GreenCredit AI",
@@ -43,12 +44,15 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # 模板配置
 templates = Jinja2Templates(directory="app/templates")
 
+
 @app.get("/")
 async def read_root(request: Request):
     """主页入口"""
     return templates.TemplateResponse(request=request, name="index.html")
 
+
 if __name__ == "__main__":
     import uvicorn
+
     # 禁用 reload，避免 Windows 下的文件锁问题
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=False)

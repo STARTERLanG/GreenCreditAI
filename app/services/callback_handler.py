@@ -13,6 +13,7 @@ class WorkflowAsyncCallbackHandler(AsyncCallbackHandler):
     2. 透传 Policy/Chat 的 Token。
     3. 详细记录所有动作日志用于排查。
     """
+
     def __init__(self, queue: asyncio.Queue):
         self.queue = queue
         # 黑名单：这些节点的输出绝对不能作为 Token 发送给用户
@@ -39,9 +40,7 @@ class WorkflowAsyncCallbackHandler(AsyncCallbackHandler):
             # logger.debug(f"[Callback] STREAMING token from {run_name}: {repr(token)}")
             await self.queue.put({"type": "token", "content": token})
 
-    async def on_tool_start(
-        self, serialized: dict[str, Any], input_str: str, **kwargs: Any
-    ) -> Any:
+    async def on_tool_start(self, serialized: dict[str, Any], input_str: str, **kwargs: Any) -> Any:
         tool_name = serialized.get("name", "Unknown Tool")
         logger.info(f"[Callback] Tool Start | Name: {tool_name} | Input: {input_str[:100]}...")
 
@@ -51,19 +50,14 @@ class WorkflowAsyncCallbackHandler(AsyncCallbackHandler):
             "id": str(tool_call_id),
             "name": tool_name,
             "input": input_str,
-            "status": "running"
+            "status": "running",
         }
         await self.queue.put({"type": "think", "content": payload})
 
     async def on_tool_end(self, output: str, **kwargs: Any) -> Any:
         logger.info(f"[Callback] Tool End | Output len: {len(str(output))}")
         tool_call_id = kwargs.get("run_id")
-        payload = {
-            "type": "tool_call",
-            "id": str(tool_call_id),
-            "output": output,
-            "status": "completed"
-        }
+        payload = {"type": "tool_call", "id": str(tool_call_id), "output": output, "status": "completed"}
         await self.queue.put({"type": "think", "content": payload})
 
     async def on_tool_error(self, error: Exception, **kwargs: Any) -> Any:

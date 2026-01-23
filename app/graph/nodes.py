@@ -19,6 +19,7 @@ from app.services.llm_factory import llm_factory
 async def router_node(state: GreenCreditState, config: RunnableConfig) -> dict[str, Any]:
     """判定意图"""
     from app.services.session_service import session_service
+
     history = session_service.get_chat_history(state["session_id"], limit=3)
     intent = await router_agent.route(state["user_query"], chat_history=history)
     return {"current_intent": intent.value}
@@ -62,18 +63,15 @@ async def auditor_node(state: GreenCreditState, config: RunnableConfig) -> dict[
     user_input = f"""
     【当前信息摘要】
     {info_summary}
-    
+
     【用户最新指令】
-    {state.get('user_query')}
+    {state.get("user_query")}
 
     请先使用工具核实企业背景，然后调用 submit_audit_result 提交结论。
     """
 
     # 恢复标准调用
-    res = await auditor_agent.ainvoke(
-        {"messages": [{"role": "user", "content": user_input}]},
-        config=config
-    )
+    res = await auditor_agent.ainvoke({"messages": [{"role": "user", "content": user_input}]}, config=config)
 
     # 结果解析逻辑保持不变 (从 Tool Calls 中提取)
     last_msg = res["messages"][-1]
@@ -92,13 +90,11 @@ async def auditor_node(state: GreenCreditState, config: RunnableConfig) -> dict[
                     if tool_call["name"] == "submit_audit_result":
                         decision_data = tool_call["args"]
                         break
-            if decision_data: break
+            if decision_data:
+                break
 
     if not decision_data:
-        return {
-            "final_report": last_msg.content if last_msg.content else "审核未完成，请重试。",
-            "is_completed": True
-        }
+        return {"final_report": last_msg.content if last_msg.content else "审核未完成，请重试。", "is_completed": True}
 
     status = decision_data.get("status")
     guide_message = decision_data.get("guide_message")
@@ -130,10 +126,7 @@ async def policy_enrichment_node(state: GreenCreditState, config: RunnableConfig
     """
 
     # 恢复标准调用
-    res = await policy_agent.ainvoke(
-        {"messages": [{"role": "user", "content": user_input}]},
-        config=config
-    )
+    res = await policy_agent.ainvoke({"messages": [{"role": "user", "content": user_input}]}, config=config)
 
     final_report = "分析失败"
     if "messages" in res and res["messages"]:
@@ -158,13 +151,10 @@ async def chat_node(state: GreenCreditState, config: RunnableConfig) -> dict[str
     [对话历史]
     {history_text}
 
-    用户输入：{state['user_query']}
+    用户输入：{state["user_query"]}
     """
 
-    res = await chat_agent.ainvoke(
-        {"messages": [{"role": "user", "content": user_input}]},
-        config=config
-    )
+    res = await chat_agent.ainvoke({"messages": [{"role": "user", "content": user_input}]}, config=config)
 
     return {"final_report": res["messages"][-1].content, "is_completed": True}
 

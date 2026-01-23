@@ -1,3 +1,20 @@
+// --- 0. Global Error Handler ---
+window.onerror = function(msg, url, line, col, error) {
+    console.error("Global Error:", msg, error);
+    const logEl = document.getElementById('error-log');
+    const loadingEl = document.getElementById('loading-text');
+    if (loadingEl) {
+        loadingEl.classList.remove('animate-pulse');
+        loadingEl.innerText = "系统初始化失败";
+        loadingEl.classList.add('text-red-500');
+    }
+    if (logEl) {
+        logEl.classList.remove('hidden');
+        logEl.textContent += `[Error] ${msg}\nLocation: ${url}:${line}:${col}\nstack: ${error?.stack || 'N/A'}\n\n`;
+    }
+    return false;
+};
+
 // --- 1. Utils & Helpers ---
 function generateUUID() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -83,6 +100,9 @@ const dom = {
     deleteModal: document.getElementById('delete-modal'),
     deleteModalContent: document.getElementById('delete-modal-content'),
     deleteModalTitle: document.getElementById('delete-modal-title'),
+    deleteConfirmWrapper: document.getElementById('delete-confirm-wrapper'),
+    deleteConfirmInput: document.getElementById('delete-confirm-input'),
+    deleteConfirmMatchText: document.getElementById('delete-confirm-match-text'),
     cancelDeleteBtn: document.getElementById('cancel-delete-btn'),
     confirmDeleteBtn: document.getElementById('confirm-delete-btn'),
     pendingFileZone: document.getElementById('pending-file-zone'),
@@ -127,7 +147,14 @@ const dom = {
     editApiUrl: document.getElementById('edit-api-url'),
     headersContainer: document.getElementById('headers-container'),
     paramsContainer: document.getElementById('params-container'),
-    examplesContainer: document.getElementById('examples-container')
+    examplesContainer: document.getElementById('examples-container'),
+    
+    // User Profile
+    sidebarUserName: document.getElementById('sidebar-user-name'),
+    sidebarUserAvatar: document.getElementById('sidebar-user-avatar'),
+    settingUserName: document.getElementById('setting-user-name'),
+    settingUserAvatar: document.getElementById('setting-user-avatar'),
+    uploadAvatarInput: document.getElementById('upload-avatar-input')
 };
 
 // --- Settings Logic ---
@@ -136,9 +163,21 @@ const defaultSettings = {
     density: 'normal', 
     autoExpandCoT: false, 
     auditMode: 'standard',
+    userProfile: {
+        name: '绿金分析师',
+        role: '信贷审批部',
+        avatar: '/static/img/user-avatar.svg'
+    },
     customApis: []
 };
 let appSettings = JSON.parse(localStorage.getItem('app_settings')) || defaultSettings;
+
+// Ensure deep merge of defaults (crucial for userProfile additions)
+if (!appSettings.userProfile) appSettings.userProfile = { ...defaultSettings.userProfile };
+else appSettings.userProfile = { ...defaultSettings.userProfile, ...appSettings.userProfile };
+
+// Ensure customApis exists
+if (!appSettings.customApis) appSettings.customApis = [];
 
 // Migration for old settings
 if (appSettings.temperature !== undefined) {
@@ -155,6 +194,31 @@ function applySettings() {
     // 2. Density
     if (appSettings.density === 'compact') document.body.classList.add('density-compact');
     else document.body.classList.remove('density-compact');
+    
+    // 3. CoT Visibility (Real-time update for existing messages)
+    const isAutoExpanded = appSettings.autoExpandCoT;
+    const thoughtContainers = document.querySelectorAll('.thought-log-container');
+    const arrowIcons = document.querySelectorAll('.thought-log-wrapper .arrow-icon');
+    
+    thoughtContainers.forEach(container => {
+        if (isAutoExpanded) container.classList.remove('hidden');
+        else container.classList.add('hidden');
+    });
+    
+    arrowIcons.forEach(icon => {
+        if (isAutoExpanded) icon.classList.remove('rotate-180');
+        else icon.classList.add('rotate-180');
+    });
+
+    // 4. User Profile
+    if (appSettings.userProfile) {
+        if (dom.sidebarUserName) dom.sidebarUserName.innerText = appSettings.userProfile.name;
+        if (dom.sidebarUserAvatar) dom.sidebarUserAvatar.src = appSettings.userProfile.avatar;
+        
+        // Update chat window avatars (Real-time)
+        const chatAvatars = document.querySelectorAll('.msg-content-container .avatar.order-2');
+        chatAvatars.forEach(img => img.src = appSettings.userProfile.avatar);
+    }
 }
 
 // --- View Switching ---
@@ -193,6 +257,8 @@ function updateSettingsUI() {
             if (mode === appSettings.auditMode) {
                 // Active State
                 checkIcon.classList.remove('opacity-0');
+                checkIcon.classList.add('opacity-100');
+                
                 if (mode === 'strict') {
                     card.className = "audit-mode-card cursor-pointer group relative bg-white p-6 rounded-2xl border-2 border-slate-600 ring-4 ring-slate-600/10 transition-all duration-200";
                 } else if (mode === 'standard') {
@@ -202,6 +268,7 @@ function updateSettingsUI() {
                 }
             } else {
                 // Inactive State
+                checkIcon.classList.remove('opacity-100');
                 checkIcon.classList.add('opacity-0');
                 card.className = "audit-mode-card cursor-pointer group relative bg-white p-6 rounded-2xl border-2 border-slate-200 hover:border-slate-400 transition-all duration-200";
             }
@@ -210,7 +277,28 @@ function updateSettingsUI() {
 
     // Custom APIs
     renderApiList();
+    
+    // User Profile
+    if (appSettings.userProfile) {
+        if (dom.settingUserName) dom.settingUserName.value = appSettings.userProfile.name;
+        if (dom.settingUserAvatar) dom.settingUserAvatar.src = appSettings.userProfile.avatar;
+    }
 }
+
+window.toggleApiTool = (id) => {
+    const api = appSettings.customApis.find(a => a.id === id);
+    if (api) {
+        api.enabled = api.enabled === undefined ? false : !api.enabled; // Default was true, so if undefined (new) -> toggle to false? No.
+        // If undefined, it means it's effectively true. So toggle makes it false.
+        // If it is false, toggle makes it true.
+        // Better:
+        if (api.enabled === undefined) api.enabled = false; // Toggle from implicit true
+        else api.enabled = !api.enabled;
+        
+        saveSettings();
+        renderApiList(); // Re-render to update styles
+    }
+};
 
 function renderApiList() {
     if (!dom.apiToolsList) return;
@@ -231,6 +319,12 @@ function renderApiList() {
         const div = document.createElement('div');
         div.className = 'bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between transition-all hover:shadow-md hover:border-emerald-300 group';
         
+        // Default enabled if undefined
+        const isEnabled = api.enabled !== false; 
+        
+        // Visual dimming if disabled
+        const contentOpacity = isEnabled ? '' : 'opacity-50 grayscale';
+        
         // Style based on Method
         const styles = {
             'GET': { bg: 'bg-blue-100', text: 'text-blue-600', icon: 'fa-search' },
@@ -244,7 +338,7 @@ function renderApiList() {
         const displayUrl = api.url.replace(/^https?:\/\//, '');
         
         div.innerHTML = `
-            <div class="flex items-center gap-4 overflow-hidden">
+            <div class="flex items-center gap-4 overflow-hidden ${contentOpacity} transition-all duration-300">
                 <div class="w-10 h-10 rounded-lg ${style.bg} ${style.text} flex items-center justify-center text-sm flex-shrink-0">
                     <i class="fas ${style.icon}"></i>
                 </div>
@@ -260,13 +354,21 @@ function renderApiList() {
                 </div>
             </div>
             
-            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                <button onclick="window.editApiTool('${api.id}')" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="编辑">
-                    <i class="fas fa-pencil-alt text-xs"></i>
-                </button>
-                <button onclick="window.deleteApiTool('${api.id}')" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="删除">
-                    <i class="fas fa-trash-alt text-xs"></i>
-                </button>
+            <div class="flex items-center gap-4 flex-shrink-0">
+                <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity border-r border-slate-100 pr-3">
+                    <button onclick="window.editApiTool('${api.id}')" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="编辑">
+                        <i class="fas fa-pencil-alt text-xs"></i>
+                    </button>
+                    <button onclick="window.deleteApiTool('${api.id}')" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="删除">
+                        <i class="fas fa-trash-alt text-xs"></i>
+                    </button>
+                </div>
+
+                <!-- Enabled Toggle -->
+                <label class="relative inline-flex items-center cursor-pointer" title="${isEnabled ? '禁用工具' : '启用工具'}">
+                    <input type="checkbox" class="sr-only peer" ${isEnabled ? 'checked' : ''} onchange="window.toggleApiTool('${api.id}')">
+                    <div class="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                </label>
             </div>
         `;
         dom.apiToolsList.appendChild(div);
@@ -301,6 +403,18 @@ window.addParamRow = (name = '', type = 'string', required = false, desc = '') =
         <div class="col-span-1 text-center"><button onclick="this.closest('.param-row').remove()" class="text-slate-400 hover:text-red-500 transition-colors"><i class="fas fa-trash-alt"></i></button></div>
     `;
     dom.paramsContainer.appendChild(div);
+};
+
+window.addExampleRow = (text = '') => {
+    if (!dom.examplesContainer) return;
+    const div = document.createElement('div');
+    div.className = 'example-row flex items-center gap-2';
+    div.innerHTML = `
+        <div class="w-6 h-6 rounded bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs flex-shrink-0 font-bold">Q</div>
+        <input type="text" class="ex-input w-full border border-slate-300 rounded px-2 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500" placeholder="例如：查询比亚迪去年的环保违规记录" value="${text}">
+        <button onclick="this.closest('.example-row').remove()" class="text-slate-400 hover:text-red-500 transition-colors px-1"><i class="fas fa-trash-alt"></i></button>
+    `;
+    dom.examplesContainer.appendChild(div);
 };
 
 window.toggleCurlImport = () => {
@@ -450,6 +564,13 @@ window.saveApiTool = () => {
     const name = dom.editApiName.value.trim();
     if (!name) return alert("请输入工具名称");
     
+    // Preserve enabled state
+    let isEnabled = true;
+    if (id && appSettings.customApis) {
+        const existing = appSettings.customApis.find(a => a.id === id);
+        if (existing && existing.enabled !== undefined) isEnabled = existing.enabled;
+    }
+    
     // Collect Headers
     const headers = {};
     dom.headersContainer.querySelectorAll('.header-row').forEach(row => {
@@ -495,7 +616,8 @@ window.saveApiTool = () => {
         url: dom.editApiUrl.value,
         headers: JSON.stringify(headers),
         params: JSON.stringify(paramsSchema),
-        examples: examples
+        examples: examples,
+        enabled: isEnabled
     };
     
     if (!appSettings.customApis) appSettings.customApis = [];
@@ -513,10 +635,9 @@ window.saveApiTool = () => {
 };
 
 window.deleteApiTool = (id) => {
-    if (!confirm("确定删除此工具吗？")) return;
-    appSettings.customApis = appSettings.customApis.filter(a => a.id !== id);
-    saveSettings();
-    renderApiList();
+    const api = appSettings.customApis.find(a => a.id === id);
+    const title = api ? api.name : 'Unknown Tool';
+    openDeleteModal(id, title, 'api_tool');
 };
 
 window.editApiTool = window.openApiEditor; // Alias
@@ -548,13 +669,14 @@ if (dom.settingsNav) {
     navBtns.forEach(btn => {
         btn.onclick = () => {
             navBtns.forEach(b => {
-                b.className = "settings-nav-item w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors";
-                b.querySelector('i').className = b.querySelector('i').className.replace('text-emerald-700', '');
+                b.className = "settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-slate-900 transition-all";
             });
-            btn.className = "settings-nav-item w-full text-left px-3 py-2 rounded-lg text-sm font-medium bg-emerald-50 text-emerald-700 transition-colors";
+            btn.className = "settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold bg-emerald-600 text-white shadow-md shadow-emerald-200 transition-all";
+            
             const targetId = btn.getAttribute('data-target');
             document.querySelectorAll('.settings-section').forEach(sec => sec.classList.add('hidden'));
-            document.getElementById(targetId).classList.remove('hidden');
+            const targetSec = document.getElementById(targetId);
+            if (targetSec) targetSec.classList.remove('hidden');
         };
     });
 }
@@ -601,52 +723,104 @@ if (dom.auditModeGroup) {
 }
 
 if (dom.btnClearAllData) {
-    dom.btnClearAllData.onclick = async () => {
-        if (confirm("确定要删除所有历史记录吗？此操作无法撤销。")) {
-            try {
-                // Assuming there is an API for this, otherwise we might need to iterate or just clear local session ID
-                // For now, let's implement a 'local reset' + backend clear if supported.
-                // Since I don't see a 'delete all' endpoint in the file list (only by ID),
-                // I'll assume we iterate or clear local ID.
-                // Best practice: Clear local storage session and reload.
-                localStorage.removeItem('last_session_id');
-                // Optional: Call backend to clear (if API existed).
-                // Since I can't confirm backend support for 'delete all', I will just reset the current session state locally.
-                alert("本地会话状态已重置。");
-                location.reload(); 
-            } catch (e) { alert("操作失败"); }
-        }
-    };
+    dom.btnClearAllData.onclick = () => openDeleteModal('all');
 }
-
 if (dom.btnAddApiTool) dom.btnAddApiTool.onclick = () => window.openApiEditor();
 if (dom.btnCancelApiTool) dom.btnCancelApiTool.onclick = window.closeApiEditor;
 if (dom.btnSaveApiTool) dom.btnSaveApiTool.onclick = window.saveApiTool;
 
+if (dom.settingUserName) {
+    dom.settingUserName.onchange = (e) => {
+        if (!appSettings.userProfile) appSettings.userProfile = {};
+        appSettings.userProfile.name = e.target.value.trim() || 'User';
+        saveSettings();
+        applySettings();
+    };
+}
+
+if (dom.uploadAvatarInput) {
+    dom.uploadAvatarInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                if (!appSettings.userProfile) appSettings.userProfile = { ...defaultSettings.userProfile };
+                appSettings.userProfile.avatar = evt.target.result; // Base64
+                saveSettings();
+                updateSettingsUI();
+                applySettings();
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+}
+
 // --- Modal Logic ---
+let pendingDeleteType = 'session'; // 'session', 'session_all', 'api_tool'
+
 function openRenameModal(id, currentTitle) {
     pendingRenameId = id;
     dom.renameInput.value = currentTitle;
     dom.renameModal.classList.remove('hidden');
-    setTimeout(() => { dom.renameModal.classList.remove('opacity-0'); dom.modalContent.classList.replace('scale-95', 'scale-100'); }, 10);
+    setTimeout(() => { 
+        dom.renameModal.classList.add('opacity-100'); 
+        dom.modalContent.classList.replace('scale-95', 'scale-100'); 
+    }, 10);
     dom.renameInput.focus();
 }
 
 function closeRenameModal() {
-    dom.renameModal.classList.add('opacity-0');
+    dom.renameModal.classList.remove('opacity-100');
     dom.modalContent.classList.replace('scale-100', 'scale-95');
     setTimeout(() => { dom.renameModal.classList.add('hidden'); pendingRenameId = null; }, 200);
 }
 
-function openDeleteModal(id, title) {
+function openDeleteModal(id, title, type = 'session') {
+    const descEl = document.getElementById('delete-modal-desc');
+    
+    // Reset UI state
+    if (dom.deleteConfirmWrapper) dom.deleteConfirmWrapper.classList.add('hidden');
+    if (dom.deleteConfirmInput) dom.deleteConfirmInput.value = '';
+    if (dom.confirmDeleteBtn) {
+        dom.confirmDeleteBtn.disabled = false;
+        dom.confirmDeleteBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+    
+    // Auto-detect 'all' for backward compatibility
+    if (id === 'all' && type === 'session') type = 'session_all';
+    
     pendingDeleteId = id;
-    if (dom.deleteModalTitle) dom.deleteModalTitle.innerText = `删除会话: ${title || '未命名'}`;
+    pendingDeleteType = type;
+
+    if (type === 'session_all') {
+        if (dom.deleteModalTitle) dom.deleteModalTitle.innerText = `重置所有数据`;
+        if (descEl) descEl.innerText = `此操作将清空您的整个对话库，且无法撤销。`;
+        
+        // Safety Check Logic
+        if (dom.deleteConfirmWrapper) {
+            dom.deleteConfirmWrapper.classList.remove('hidden');
+            dom.confirmDeleteBtn.disabled = true;
+            dom.confirmDeleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            setTimeout(() => dom.deleteConfirmInput.focus(), 100);
+        }
+        
+    } else if (type === 'api_tool') {
+        if (dom.deleteModalTitle) dom.deleteModalTitle.innerText = `删除工具`;
+        if (descEl) descEl.innerText = `您确定要删除自定义工具 "${title}" 吗？此操作无法撤销。`;
+    } else {
+        if (dom.deleteModalTitle) dom.deleteModalTitle.innerText = `删除会话`;
+        if (descEl) descEl.innerText = `您确定要删除 "${title || '未命名'}" 吗？此操作无法撤销。`;
+    }
+    
     dom.deleteModal.classList.remove('hidden');
-    setTimeout(() => { dom.deleteModal.classList.remove('opacity-0'); dom.deleteModalContent.classList.replace('scale-95', 'scale-100'); }, 10);
+    setTimeout(() => { 
+        dom.deleteModal.classList.add('opacity-100'); 
+        dom.deleteModalContent.classList.replace('scale-95', 'scale-100'); 
+    }, 10);
 }
 
 function closeDeleteModal() {
-    dom.deleteModal.classList.add('opacity-0');
+    dom.deleteModal.classList.remove('opacity-100');
     dom.deleteModalContent.classList.replace('scale-100', 'scale-95');
     setTimeout(() => { dom.deleteModal.classList.add('hidden'); pendingDeleteId = null; }, 200);
 }
@@ -654,6 +828,20 @@ function closeDeleteModal() {
 // Bind Modal Events
 if (dom.cancelRenameBtn) dom.cancelRenameBtn.onclick = closeRenameModal;
 if (dom.cancelDeleteBtn) dom.cancelDeleteBtn.onclick = closeDeleteModal;
+
+if (dom.deleteConfirmInput) {
+    dom.deleteConfirmInput.oninput = (e) => {
+        const val = e.target.value;
+        const target = dom.deleteConfirmMatchText.innerText;
+        if (val === target) {
+            dom.confirmDeleteBtn.disabled = false;
+            dom.confirmDeleteBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        } else {
+            dom.confirmDeleteBtn.disabled = true;
+            dom.confirmDeleteBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+    };
+}
 
 if (dom.confirmRenameBtn) {
     dom.confirmRenameBtn.onclick = async () => {
@@ -674,13 +862,31 @@ if (dom.confirmRenameBtn) {
 
 if (dom.confirmDeleteBtn) {
     dom.confirmDeleteBtn.onclick = async () => {
-        if (!pendingDeleteId) return;
+        if (!pendingDeleteId && pendingDeleteId !== 0) return;
+        
         try {
-            await fetch(`/api/v1/chat/sessions/${pendingDeleteId}`, { method: 'DELETE' });
-            if (pendingDeleteId === currentSessionId) dom.newChatBtn.click();
-            else await loadSessions();
+            if (pendingDeleteType === 'session_all') {
+                // 批量删除逻辑
+                await fetch('/api/v1/chat/sessions', { method: 'DELETE' });
+                localStorage.removeItem('last_session_id');
+                location.reload(); 
+            } else if (pendingDeleteType === 'api_tool') {
+                // 删除自定义工具
+                appSettings.customApis = appSettings.customApis.filter(a => a.id !== pendingDeleteId);
+                saveSettings();
+                renderApiList();
+            } else {
+                // 单个会话删除
+                await fetch(`/api/v1/chat/sessions/${pendingDeleteId}`, { method: 'DELETE' });
+                if (pendingDeleteId === currentSessionId) {
+                    localStorage.removeItem('last_session_id');
+                    dom.newChatBtn.click();
+                } else {
+                    await loadSessions();
+                }
+            }
             closeDeleteModal();
-        } catch (e) { alert("删除失败"); }
+        } catch (e) { alert("操作失败"); }
     };
 }
 
@@ -803,7 +1009,10 @@ function renderMessage(content, role, animate = true, attachments = [], thought_
     const wrapper = document.createElement('div');
     wrapper.className = `msg-wrapper mb-8 ${animate ? 'fade-in-up' : ''}`;
     const isUser = role === 'user';
-    const avatarImg = isUser ? '/static/img/user-avatar.svg' : '/static/img/ai-avatar.svg';
+    let avatarImg = isUser ? '/static/img/user-avatar.svg' : '/static/img/ai-avatar.svg';
+    if (isUser && appSettings.userProfile && appSettings.userProfile.avatar) {
+        avatarImg = appSettings.userProfile.avatar;
+    }
 
     const actionsHtml = isUser ? `
         <div class="msg-actions justify-end mr-1">
@@ -1219,6 +1428,18 @@ if (dom.resizer) {
         };
     };
 }
+
+window.addExampleRow = (text = '') => {
+    if (!dom.examplesContainer) return;
+    const div = document.createElement('div');
+    div.className = 'example-row flex items-center gap-2';
+    div.innerHTML = `
+        <div class="w-6 h-6 rounded bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs flex-shrink-0 font-bold">Q</div>
+        <input type="text" class="ex-input w-full border border-slate-300 rounded px-2 py-1.5 text-xs focus:ring-2 focus:ring-emerald-500" placeholder="例如：查询比亚迪去年的环保违规记录" value="${text}">
+        <button onclick="this.closest('.example-row').remove()" class="text-slate-400 hover:text-red-500 transition-colors px-1"><i class="fas fa-trash-alt"></i></button>
+    `;
+    dom.examplesContainer.appendChild(div);
+};
 
 // --- Initialization ---
 window.onload = async () => {

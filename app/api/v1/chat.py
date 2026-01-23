@@ -31,6 +31,13 @@ async def chat_completions(request: ChatRequest):
     return StreamingResponse(workflow_service.process_stream(request), media_type="text/event-stream")
 
 
+@router.delete("/sessions")
+async def delete_all_sessions():
+    """删除所有会话"""
+    session_service.delete_all_sessions()
+    return {"status": "success"}
+
+
 @router.delete("/sessions/{session_id}")
 async def delete_session(session_id: str):
     """删除会话"""

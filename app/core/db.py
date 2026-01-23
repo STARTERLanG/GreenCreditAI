@@ -1,12 +1,10 @@
+from sqlalchemy import event
 from sqlmodel import Session, SQLModel, create_engine
 
 from app.core.config import settings
 
 # check_same_thread=False 是 SQLite 在 FastAPI 中使用的必要配置
 engine = create_engine(settings.SQLITE_DB_PATH, connect_args={"check_same_thread": False, "timeout": 10})
-
-
-from sqlalchemy import event
 
 
 @event.listens_for(engine, "connect")

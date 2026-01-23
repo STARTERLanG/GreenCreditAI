@@ -8,11 +8,13 @@ from app.core.logging import logger
 # 这种结构允许不同工具对同一 query 有不同的缓存
 GLOBAL_TOOL_CACHE: dict[str, dict[str, Any]] = {}
 
+
 def tool_cache(func: Callable) -> Callable:
     """
     通用工具缓存装饰器。
     基于工具函数名 + 第一个参数(query) 进行缓存。
     """
+
     @functools.wraps(func)
     async def wrapper(*args, **kwargs):
         # 获取工具名

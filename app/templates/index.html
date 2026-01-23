@@ -50,7 +50,7 @@
             <button id="new-chat-btn"
                 class="flex-1 bg-white hover:bg-emerald-50 text-emerald-700 font-semibold py-2.5 px-4 rounded-xl shadow-sm border border-[#d1e2da] transition-all flex items-center justify-center space-x-2 group/btn overflow-hidden active:scale-95">
                 <i class="fas fa-plus text-xs"></i>
-                <span class="text-sm whitespace-nowrap sidebar-text">New Chat</span>
+                <span class="text-sm whitespace-nowrap sidebar-text">新建对话</span>
             </button>
 
             <button id="search-btn"
@@ -62,7 +62,7 @@
 
         <!-- History Title -->
         <div class="px-6 py-3 text-[10px] font-bold text-emerald-600/60 uppercase tracking-wider sidebar-text">
-            History
+            历史会话
         </div>
 
         <!-- Session List -->
@@ -74,12 +74,10 @@
         <div class="p-4 border-t border-[#d1e2da] sidebar-footer transition-all duration-300">
             <div class="flex items-center justify-between space-x-2 px-2 py-2 rounded-xl hover:bg-white/50 transition-colors overflow-hidden group/user">
                 <div class="flex items-center space-x-3 overflow-hidden flex-1 cursor-pointer sidebar-user-card">
-                    <div class="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-bold shadow-sm flex-shrink-0 transition-all duration-300">
-                        GC
-                    </div>
+                    <img id="sidebar-user-avatar" src="/static/img/user-avatar.svg" class="w-8 h-8 rounded-full object-cover shadow-sm flex-shrink-0 transition-all duration-300">
                     <div class="text-sm text-[#2d4a43] whitespace-nowrap sidebar-text">
-                        <div class="font-medium">Admin User</div>
-                        <div class="text-[10px] text-emerald-600 font-medium">Pro Plan</div>
+                        <div id="sidebar-user-name" class="font-medium truncate">Admin User</div>
+                        <div class="text-[10px] text-emerald-600 font-medium truncate">Pro Edition</div>
                     </div>
                 </div>
                 <!-- Settings Btn -->
@@ -115,7 +113,7 @@
                 <div class="max-w-3xl mx-auto h-full flex flex-col">
                     <!-- Welcome Screen -->
                     <div id="welcome-screen" class="flex flex-col items-center justify-center space-y-10 min-h-[50vh]">
-                        <div class="text-slate-400 text-sm animate-pulse">正在加载资源...</div>
+                        <div id="loading-text" class="text-slate-400 text-sm animate-pulse">正在加载资源...</div><div id="error-log" class="text-red-500 text-xs mt-4 text-left max-w-lg overflow-auto max-h-48 hidden whitespace-pre-wrap font-mono bg-red-50 p-4 rounded-lg border border-red-100"></div>
                     </div>
                 </div>
             </div>
@@ -139,7 +137,7 @@
                         <!-- Text Input -->
                         <textarea id="user-input" rows="1"
                             class="w-full bg-transparent border-none focus:ring-0 text-gray-700 placeholder-gray-500 pl-14 pr-14 py-4 resize-none max-h-48 overflow-y-auto leading-relaxed"
-                            placeholder="Enter a prompt here" style="min-height: 56px;"></textarea>
+                            placeholder="在此输入问题..." style="min-height: 56px;"></textarea>
 
                         <!-- Send Button -->
                         <button id="send-btn"
@@ -149,7 +147,7 @@
                     </div>
                     <div class="text-center mt-3">
                         <p class="text-[11px] text-gray-400">
-                            GreenCredit AI can make mistakes. Consider checking important information.
+                            GreenCredit AI 可能会犯错。请核实关键信息。
                         </p>
                     </div>
                 </div>
@@ -192,65 +190,98 @@
         </div>
     </main>
 
-    <!-- Settings View (Full Screen Overlay in Main) -->
-    <div id="settings-view" class="absolute inset-0 z-40 bg-slate-50 flex flex-col hidden h-full w-full">
-        <!-- Header -->
-        <div class="h-14 border-b border-slate-200 bg-white flex items-center justify-between px-6 flex-shrink-0 shadow-sm z-50">
-            <h2 class="text-lg font-bold text-slate-800">设置</h2>
-            <button id="close-settings-view-btn"
-                class="text-slate-400 hover:text-slate-600 transition-colors p-2 rounded-lg hover:bg-slate-100">
-                <i class="fas fa-times text-lg"></i>
-            </button>
-        </div>
-
-        <!-- Body -->
-        <div class="flex-1 flex overflow-hidden">
-            <!-- Settings Sidebar -->
-            <div class="w-56 border-r border-slate-200 bg-white flex flex-col py-6 flex-shrink-0">
-                <nav class="space-y-1 px-3" id="settings-nav">
-                    <button
-                        class="settings-nav-item w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium bg-emerald-50 text-emerald-700 transition-colors"
-                        data-target="settings-general">
-                        <i class="fas fa-sliders-h w-5 text-center mr-2"></i> 通用设置
+        <!-- Settings View (Full Screen Overlay in Main) -->
+        <div id="settings-view" class="absolute inset-0 z-40 bg-slate-900/40 backdrop-blur-sm flex flex-col hidden h-full w-full pt-8 pb-8 px-6 overflow-y-auto">
+            <!-- Centered Settings Window Wrapper -->
+            <div class="max-w-6xl w-full mx-auto flex flex-col flex-1 shadow-2xl rounded-2xl overflow-hidden animate-fade-in-up">
+                
+                <!-- Header (Floating-look inside Container) -->
+                <div class="h-16 border-b border-slate-100 bg-white flex items-center justify-between px-8 flex-shrink-0 z-50">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white shadow-sm">
+                            <i class="fas fa-cog text-sm"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-slate-800">系统设置</h2>
+                    </div>
+                    <button id="close-settings-view-btn"
+                        class="text-slate-400 hover:text-red-500 transition-all p-2 rounded-xl hover:bg-red-50 active:scale-95">
+                        <i class="fas fa-times text-xl"></i>
                     </button>
-                    <button
-                        class="settings-nav-item w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                        data-target="settings-audit">
-                        <i class="fas fa-gavel w-5 text-center mr-2"></i> 审核标准
-                    </button>
-                    <div class="h-px bg-slate-100 my-2 mx-3"></div>
-                    <button
-                        class="settings-nav-item w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                        data-target="settings-kb">
-                        <i class="fas fa-database w-5 text-center mr-2"></i> 知识库
-                    </button>
-                    <button
-                        class="settings-nav-item w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                        data-target="settings-mcp">
-                        <i class="fas fa-network-wired w-5 text-center mr-2"></i> MCP 服务
-                    </button>
-                    <button
-                        class="settings-nav-item w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                        data-target="settings-api">
-                        <i class="fas fa-code w-5 text-center mr-2"></i> API 配置
-                    </button>
-                    <div class="h-px bg-slate-100 my-2 mx-3"></div>
-                    <button
-                        class="settings-nav-item w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
-                        data-target="settings-about">
-                        <i class="fas fa-info-circle w-5 text-center mr-2"></i> 关于系统
-                    </button>
-                </nav>
-            </div>
-
-            <!-- Settings Content -->
-            <div class="flex-1 overflow-y-auto bg-slate-50">
-                <div class="max-w-3xl mx-auto py-12 px-8 min-h-full">
-                    <!-- Section: General -->
+                </div>
+    
+                <!-- Body Area -->
+                <div class="flex-1 flex overflow-hidden bg-white">
+                    <!-- Settings Sidebar -->
+                    <div class="w-64 bg-slate-50 border-r border-slate-100 flex flex-col py-8 flex-shrink-0">
+                        <nav class="space-y-1.5 px-4" id="settings-nav">
+                            <button
+                                class="settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold bg-emerald-600 text-white shadow-md shadow-emerald-200 transition-all"
+                                data-target="settings-general">
+                                <i class="fas fa-sliders-h w-5 text-center mr-3"></i> 通用设置
+                            </button>
+                            <button
+                                class="settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-slate-900 transition-all"
+                                data-target="settings-audit">
+                                <i class="fas fa-gavel w-5 text-center mr-3"></i> 审核标准
+                            </button>
+                            <div class="h-px bg-slate-200/50 my-4 mx-2"></div>
+                            <button
+                                class="settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-slate-900 transition-all"
+                                data-target="settings-kb">
+                                <i class="fas fa-database w-5 text-center mr-3"></i> 知识库
+                            </button>
+                            <button
+                                class="settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-slate-900 transition-all"
+                                data-target="settings-mcp">
+                                <i class="fas fa-network-wired w-5 text-center mr-3"></i> MCP 服务
+                            </button>
+                            <button
+                                class="settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-slate-900 transition-all"
+                                data-target="settings-api">
+                                <i class="fas fa-magic w-5 text-center mr-3"></i> 自定义工具
+                            </button>
+                            <div class="h-px bg-slate-200/50 my-4 mx-2"></div>
+                            <button
+                                class="settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-slate-900 transition-all"
+                                data-target="settings-about">
+                                <i class="fas fa-info-circle w-5 text-center mr-3"></i> 关于系统
+                            </button>
+                        </nav>
+                    </div>
+    
+                    <!-- Settings Content -->
+                    <div class="flex-1 overflow-y-auto bg-white relative">
+                        <div class="max-w-3xl mx-auto py-12 px-12 min-h-full">                    <!-- Section: General -->
                     <section id="settings-general" class="settings-section space-y-8 fade-in-up">
                         <div>
                             <h3 class="text-xl font-bold text-slate-800 mb-1">通用设置</h3>
                             <p class="text-sm text-slate-500">管理界面外观与应用数据</p>
+                        </div>
+
+                        <!-- User Profile (Minimal Centered) -->
+                        <div class="flex flex-col items-center py-6 group/profile">
+                            <!-- Avatar -->
+                            <div class="relative cursor-pointer mb-8" onclick="document.getElementById('upload-avatar-input').click()">
+                                <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-xl group-hover/profile:shadow-emerald-100 transition-all ring-1 ring-slate-200">
+                                    <img id="setting-user-avatar" src="/static/img/user-avatar.svg" class="w-full h-full object-cover">
+                                </div>
+                                <div class="absolute inset-0 bg-slate-900/40 rounded-full flex flex-col items-center justify-center opacity-0 hover:opacity-100 transition-all backdrop-blur-[1px]">
+                                    <i class="fas fa-camera text-white text-2xl mb-1"></i>
+                                    <span class="text-[10px] text-white font-medium uppercase tracking-wider">Change</span>
+                                </div>
+                                <input type="file" id="upload-avatar-input" class="hidden" accept="image/png, image/jpeg, image/webp">
+                            </div>
+                            
+                            <!-- Info Inputs (Centered & Seamless) -->
+                            <div class="w-full max-w-md text-center">
+                                <div class="relative inline-block w-full">
+                                    <input type="text" id="setting-user-name" 
+                                        class="w-full bg-transparent border-none text-center text-3xl font-extrabold text-slate-800 placeholder-slate-300 focus:outline-none focus:ring-0 transition-all" 
+                                        placeholder="您的姓名" value="绿金分析师">
+                                    <!-- Decorative Line -->
+                                    <div class="absolute bottom-[-12px] left-1/2 -translate-x-1/2 w-16 h-1 bg-emerald-500 rounded-full opacity-0 group-hover/profile:opacity-100 transition-opacity"></div>
+                                </div>
+                            </div>
                         </div>
                         
                         <div class="space-y-4">
@@ -662,8 +693,12 @@
                     
                     <!-- Section: About -->
                     <section id="settings-about" class="settings-section hidden">
-                        <h3 class="text-lg font-medium text-slate-900 mb-4 pb-2 border-b border-slate-200">关于</h3>
-                        <div class="bg-white p-10 rounded-xl border border-slate-200 shadow-sm text-center space-y-6">
+                        <h3 class="text-center text-xs font-bold text-slate-300 uppercase tracking-[0.2em] mb-8 select-none flex items-center justify-center gap-4">
+                            <span class="h-px w-12 bg-slate-200"></span>
+                            <span>System Info</span>
+                            <span class="h-px w-12 bg-slate-200"></span>
+                        </h3>
+                        <div class="bg-white p-10 rounded-2xl border border-slate-200 shadow-lg shadow-slate-200/50 text-center space-y-6 max-w-lg mx-auto">
                             <img src="/static/img/logo.svg" class="w-20 h-20 mx-auto rounded-2xl shadow-md">
                             <div>
                                 <h4 class="text-2xl font-bold text-slate-800">绿色信贷智能助手</h4>
@@ -681,6 +716,7 @@
                         </div>
                     </section>
                 </div>
+            </div>
             </div>
         </div>
     </div>
@@ -715,6 +751,12 @@
             <h3 class="text-lg font-bold text-slate-800 mb-2 text-center" id="delete-modal-title">删除会话</h3>
             <p class="text-sm text-slate-500 mb-6 text-center" id="delete-modal-desc">您确定要删除这个会话吗？此操作无法撤销，所有聊天记录都将丢失。
             </p>
+            
+            <!-- Safety Check Input -->
+            <div id="delete-confirm-wrapper" class="hidden mb-6 px-4">
+                <label class="block text-xs text-slate-500 mb-2 text-center">请输入 <span class="font-bold text-red-600 select-none bg-red-50 px-1.5 py-0.5 rounded border border-red-100" id="delete-confirm-match-text">删除所有会话</span> 以确认</label>
+                <input type="text" id="delete-confirm-input" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition-shadow text-center font-bold text-slate-700" placeholder="" autocomplete="off">
+            </div>
             <div class="flex justify-center space-x-3">
                 <button id="cancel-delete-btn"
                     class="flex-1 px-4 py-2 rounded-lg text-slate-500 hover:bg-slate-100 font-medium transition-colors">取消</button>

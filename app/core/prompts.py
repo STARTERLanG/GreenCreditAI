@@ -1,5 +1,6 @@
 # app/core/prompts.py
 
+
 class Prompts:
     """集中管理所有 Agent 的 System Prompt"""
 
