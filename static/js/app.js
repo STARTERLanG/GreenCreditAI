@@ -180,8 +180,23 @@ const dom = {
     mcpList: document.getElementById('mcp-list'),
     mcpEditorTitle: document.getElementById('mcp-editor-title'),
     editMcpId: document.getElementById('edit-mcp-id'),
-    editMcpJson: document.getElementById('edit-mcp-json')
+    editMcpJson: document.getElementById('edit-mcp-json'),
+    
+    // Knowledge Base DOM
+    kbList: document.querySelector('#settings-kb tbody'),
+    btnSyncKb: document.getElementById('btn-sync-kb'),
+    btnUploadKb: document.getElementById('btn-upload-kb'),
+    kbStatsDocs: document.getElementById('kb-stats-docs'),
+    kbStatsChunks: document.getElementById('kb-stats-chunks'),
+    kbStatsLastUpdate: document.getElementById('kb-stats-last-update')
 };
+
+// --- Check DOM Integrity ---
+Object.entries(dom).forEach(([key, el]) => {
+    if (!el && key !== 'kbList') { // kbList is inside a section that might be hidden
+        console.warn(`[DOM Warning] Element '${key}' not found in document.`);
+    }
+});
 
 // --- Settings Logic ---
 const defaultSettings = { 
@@ -250,63 +265,131 @@ function applySettings() {
 
 // --- View Switching ---
 function showChat() {
+    console.log("[View] Switching to Chat");
     dom.settingsView.classList.add('hidden');
+    dom.settingsView.style.display = 'none';
     dom.chatContainer.classList.remove('hidden');
 }
 
 function showSettings() {
-    dom.chatContainer.classList.add('hidden');
-    dom.settingsView.classList.remove('hidden');
+    console.log("[View] Attempting to show Settings");
+    const view = dom.settingsView;
+    if (!view) {
+        console.error("Settings view element not found!");
+        return;
+    }
+    
+    // 1. 隐藏聊天，显示设置
+    if (dom.chatContainer) dom.chatContainer.classList.add('hidden');
+    
+    view.classList.remove('hidden');
+    view.style.display = 'flex'; // 强制 flex
+    view.style.zIndex = '9999';  // 确保最高层级
+    
+    // 2. 初始化 UI
     updateSettingsUI();
+    
+    // 3. 模拟点击第一个导航项以确保内容展示
+    const firstNav = dom.settingsNav?.querySelector('.settings-nav-item');
+    if (firstNav) {
+        console.log("[View] Triggering first nav item click");
+        firstNav.click();
+    }
 }
+
+// --- Knowledge Base Logic ---
+async function renderKbList() {
+    if (!dom.kbList) return;
+    try {
+        const res = await fetch('/api/v1/documents/list');
+        if (!res.ok) return;
+        const files = await res.json();
+        
+        dom.kbList.innerHTML = '';
+        if (files.length === 0) {
+            dom.kbList.innerHTML = '<tr><td colspan="4" class="px-6 py-10 text-center text-slate-400">暂无文档</td></tr>';
+        }
+        
+        let indexedCount = 0;
+        files.forEach(file => {
+            if (file.indexed) indexedCount++;
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-slate-50 transition-colors group';
+            
+            const statusHtml = file.indexed 
+                ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-700">已索引</span>'
+                : '<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-700">未索引</span>';
+            
+            const type = (file.file_type || '').replace('.', '').toUpperCase();
+            
+            tr.innerHTML = `
+                <td class="px-6 py-3 font-medium text-slate-700 truncate max-w-[200px]" title="${file.filename}">${file.filename}</td>
+                <td class="px-6 py-3 text-slate-500 text-xs">${type}</td>
+                <td class="px-6 py-3">${statusHtml}</td>
+                <td class="px-6 py-3 text-right">
+                    <div class="flex justify-end gap-2">
+                        ${!file.indexed ? `<button onclick="window.indexKbFile('${file.file_hash}')" class="text-emerald-600 hover:text-emerald-700 text-xs font-bold" title="立即建立索引"><i class="fas fa-magic"></i></button>` : ''}
+                        <button onclick="window.deleteKbFile('${file.file_hash}')" class="text-slate-300 hover:text-red-500 transition-colors" title="删除"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                </td>
+            `;
+            dom.kbList.appendChild(tr);
+        });
+        
+        // Update Stats
+        if (dom.kbStatsDocs) dom.kbStatsDocs.innerHTML = `${files.length} <span class="text-sm font-normal text-slate-400">份</span>`;
+    } catch (e) { console.error("Render KB list failed", e); }
+}
+
+window.syncKb = async () => {
+    const btn = dom.btnSyncKb;
+    const oldHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 同步中...';
+    
+    try {
+        const res = await fetch('/api/v1/documents/sync', { method: 'POST' });
+        const data = await res.json();
+        if (res.ok) {
+            window.showToast(`同步完成: ${data.results.length} 个文件已处理`, 'success');
+            renderKbList();
+            if (dom.kbStatsLastUpdate) dom.kbStatsLastUpdate.innerText = new Date().toLocaleTimeString();
+        } else {
+            window.showToast("同步失败", 'error');
+        }
+    } catch (e) { window.showToast("网络错误", 'error'); }
+    finally {
+        btn.disabled = false;
+        btn.innerHTML = oldHtml;
+    }
+};
+
+window.indexKbFile = async (hash) => {
+    try {
+        const res = await fetch(`/api/v1/documents/index/${hash}`, { method: 'POST' });
+        if (res.ok) {
+            window.showToast("索引建立成功", 'success');
+            renderKbList();
+        }
+    } catch (e) { window.showToast("建立索引失败", 'error'); }
+};
+
+window.deleteKbFile = async (hash) => {
+    if (!confirm("确定要从知识库中永久删除此文件吗？相关向量也将被移除。")) return;
+    try {
+        const res = await fetch(`/api/v1/documents/${hash}`, { method: 'DELETE' });
+        if (res.ok) {
+            window.showToast("删除成功", 'success');
+            renderKbList();
+        }
+    } catch (e) { window.showToast("删除失败", 'error'); }
+};
 
 function updateSettingsUI() {
     // Auto Expand
     if (dom.viewSettingAutoExpand) dom.viewSettingAutoExpand.checked = appSettings.autoExpandCoT;
     
-    // Font Size Group
-    if (dom.viewFontSizeGroup) {
-        updateButtonGroup(dom.viewFontSizeGroup, appSettings.fontSize, 'bg-white shadow-sm text-emerald-700', 'text-slate-500 hover:text-slate-900');
-    }
-
-    // Density Group
-    if (dom.viewDensityGroup) {
-        updateButtonGroup(dom.viewDensityGroup, appSettings.density, 'bg-white shadow-sm text-emerald-700', 'text-slate-500 hover:text-slate-900');
-    }
-
-    // Audit Mode Cards
-    if (dom.auditModeGroup) {
-        const cards = dom.auditModeGroup.querySelectorAll('.audit-mode-card');
-        cards.forEach(card => {
-            const mode = card.getAttribute('data-mode');
-            const checkIcon = card.querySelector('.check-icon');
-            
-            if (mode === appSettings.auditMode) {
-                // Active State
-                checkIcon.classList.remove('opacity-0');
-                checkIcon.classList.add('opacity-100');
-                
-                if (mode === 'strict') {
-                    card.className = "audit-mode-card cursor-pointer group relative bg-white p-6 rounded-2xl border-2 border-slate-600 ring-4 ring-slate-600/10 transition-all duration-200";
-                } else if (mode === 'standard') {
-                    card.className = "audit-mode-card cursor-pointer group relative bg-white p-6 rounded-2xl border-2 border-emerald-500 ring-4 ring-emerald-500/10 transition-all duration-200";
-                } else if (mode === 'advisory') {
-                    card.className = "audit-mode-card cursor-pointer group relative bg-white p-6 rounded-2xl border-2 border-blue-500 ring-4 ring-blue-500/10 transition-all duration-200";
-                }
-            } else {
-                // Inactive State
-                checkIcon.classList.remove('opacity-100');
-                checkIcon.classList.add('opacity-0');
-                card.className = "audit-mode-card cursor-pointer group relative bg-white p-6 rounded-2xl border-2 border-slate-200 hover:border-slate-400 transition-all duration-200";
-            }
-        });
-    }
-
-    // Custom APIs
-    renderApiList();
-    
-    // MCP Servers
-    renderMcpList();
+    // ... (rest of the function)
     
     // User Profile
     if (appSettings.userProfile) {
@@ -985,15 +1068,30 @@ if (dom.settingsNav) {
     const navBtns = dom.settingsNav.querySelectorAll('.settings-nav-item');
     navBtns.forEach(btn => {
         btn.onclick = () => {
+            // 1. UI Feedback
             navBtns.forEach(b => {
                 b.className = "settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-slate-900 transition-all";
             });
             btn.className = "settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold bg-emerald-600 text-white shadow-md shadow-emerald-200 transition-all";
             
+            // 2. Switch Section
             const targetId = btn.getAttribute('data-target');
-            document.querySelectorAll('.settings-section').forEach(sec => sec.classList.add('hidden'));
+            console.log("[Settings] Switching to:", targetId);
+            
+            document.querySelectorAll('.settings-section').forEach(sec => {
+                sec.classList.add('hidden');
+            });
+            
             const targetSec = document.getElementById(targetId);
-            if (targetSec) targetSec.classList.remove('hidden');
+            if (targetSec) {
+                targetSec.classList.remove('hidden');
+                // 3. Trigger context-specific logic
+                if (targetId === 'settings-kb') renderKbList();
+                if (targetId === 'settings-api') renderApiList();
+                if (targetId === 'settings-mcp') renderMcpList();
+            } else {
+                console.warn("[Settings] Target section not found:", targetId);
+            }
         };
     });
 }
@@ -1045,6 +1143,34 @@ if (dom.btnClearAllData) {
 if (dom.btnAddApiTool) dom.btnAddApiTool.onclick = () => window.openApiEditor();
 if (dom.btnCancelApiTool) dom.btnCancelApiTool.onclick = window.closeApiEditor;
 if (dom.btnSaveApiTool) dom.btnSaveApiTool.onclick = window.saveApiTool;
+
+// Knowledge Base Events
+if (dom.btnSyncKb) dom.btnSyncKb.onclick = () => window.syncKb();
+if (dom.btnUploadKb) {
+    dom.btnUploadKb.onclick = () => {
+        // 创建一个临时的 file input 来处理知识库上传
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.multiple = true;
+        input.onchange = async () => {
+            for (const file of Array.from(input.files)) {
+                const formData = new FormData();
+                formData.append('file', file);
+                window.showToast(`正在上传并索引: ${file.name}...`);
+                try {
+                    const res = await fetch('/api/v1/documents/upload', { method: 'POST', body: formData });
+                    if (res.ok) {
+                        window.showToast(`文件 ${file.name} 处理成功`, 'success');
+                        renderKbList();
+                    }
+                } catch (e) {
+                    window.showToast(`上传失败: ${file.name}`, 'error');
+                }
+            }
+        };
+        input.click();
+    };
+}
 
 if (dom.settingUserName) {
     dom.settingUserName.onchange = (e) => {

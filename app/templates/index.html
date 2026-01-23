@@ -402,17 +402,22 @@
                                 <h3 class="text-xl font-bold text-slate-800 mb-1">知识库管理</h3>
                                 <p class="text-sm text-slate-500">管理 RAG 检索增强生成的文档与索引</p>
                             </div>
-                            <button class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg shadow-sm transition-all flex items-center gap-2">
-                                <i class="fas fa-cloud-upload-alt"></i> 上传文档
-                            </button>
+                            <div class="flex gap-2">
+                                <button id="btn-sync-kb" class="px-4 py-2 bg-white border border-slate-200 text-slate-600 hover:text-emerald-600 text-sm font-medium rounded-lg shadow-sm transition-all flex items-center gap-2 active:scale-95">
+                                    <i class="fas fa-sync"></i> 同步目录
+                                </button>
+                                <button id="btn-upload-kb" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg shadow-sm transition-all flex items-center gap-2 active:scale-95">
+                                    <i class="fas fa-cloud-upload-alt"></i> 上传文档
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Info Box -->
                         <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-4 items-start">
                             <div class="text-blue-600 mt-1"><i class="fas fa-book-reader text-xl"></i></div>
                             <div>
-                                <h4 class="text-sm font-bold text-blue-800">为什么建立知识库？</h4>
-                                <p class="text-xs text-blue-600/80 mt-1 leading-relaxed">上传您的信贷政策、行业标准或私有财报文档。系统会自动解析并索引这些文件，让 AI 在回答问题时能够精准检索并引用这些权威依据（RAG 技术），有效解决大模型“幻觉”问题，确保回答的专业性与时效性。</p>
+                                <h4 class="text-sm font-bold text-blue-800">如何建立知识库？</h4>
+                                <p class="text-xs text-blue-600/80 mt-1 leading-relaxed">上传您的信贷政策、行业标准或私有财报文档。系统会自动解析并索引这些文件，让 AI 在回答问题时能够精准检索并引用这些权威依据（RAG 技术），有效解决大模型“幻觉”问题。</p>
                             </div>
                         </div>
 
@@ -420,20 +425,20 @@
                         <div class="grid grid-cols-3 gap-4">
                             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
                                 <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">已索引文档</div>
-                                <div class="text-2xl font-bold text-slate-800">12 <span class="text-sm font-normal text-slate-400">份</span></div>
+                                <div class="text-2xl font-bold text-slate-800" id="kb-stats-docs">0 <span class="text-sm font-normal text-slate-400">份</span></div>
                             </div>
                             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">向量片段</div>
-                                <div class="text-2xl font-bold text-slate-800">8,432 <span class="text-sm font-normal text-slate-400">chunks</span></div>
+                                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">系统状态</div>
+                                <div class="text-lg font-bold text-emerald-600" id="kb-stats-chunks">Ready</div>
                             </div>
                             <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">上次更新</div>
-                                <div class="text-lg font-bold text-slate-800">10分钟前</div>
+                                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">最近同步</div>
+                                <div class="text-lg font-bold text-slate-800" id="kb-stats-last-update">-</div>
                             </div>
                         </div>
 
                         <!-- File List -->
-                        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[200px]">
                             <table class="w-full text-sm text-left">
                                 <thead class="bg-slate-50 border-b border-slate-200 text-xs text-slate-500 uppercase">
                                     <tr>
@@ -444,30 +449,7 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
-                                    <tr class="hover:bg-slate-50 transition-colors">
-                                        <td class="px-6 py-3 font-medium text-slate-700">绿色信贷指引(2025版).pdf</td>
-                                        <td class="px-6 py-3 text-slate-500">PDF</td>
-                                        <td class="px-6 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-700">已索引</span></td>
-                                        <td class="px-6 py-3 text-right text-slate-400">
-                                            <button class="hover:text-red-500 transition-colors"><i class="fas fa-trash-alt"></i></button>
-                                        </td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50 transition-colors">
-                                        <td class="px-6 py-3 font-medium text-slate-700">光伏行业准入标准.docx</td>
-                                        <td class="px-6 py-3 text-slate-500">DOCX</td>
-                                        <td class="px-6 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-100 text-emerald-700">已索引</span></td>
-                                        <td class="px-6 py-3 text-right text-slate-400">
-                                            <button class="hover:text-red-500 transition-colors"><i class="fas fa-trash-alt"></i></button>
-                                        </td>
-                                    </tr>
-                                    <tr class="hover:bg-slate-50 transition-colors">
-                                        <td class="px-6 py-3 font-medium text-slate-700">企业财务报表_2024Q4.xlsx</td>
-                                        <td class="px-6 py-3 text-slate-500">XLSX</td>
-                                        <td class="px-6 py-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700">解析中</span></td>
-                                        <td class="px-6 py-3 text-right text-slate-400">
-                                            <button class="hover:text-red-500 transition-colors"><i class="fas fa-trash-alt"></i></button>
-                                        </td>
-                                    </tr>
+                                    <!-- Dynamic items -->
                                 </tbody>
                             </table>
                         </div>

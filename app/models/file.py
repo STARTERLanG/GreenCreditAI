@@ -3,6 +3,15 @@ from datetime import datetime
 from sqlmodel import Field, SQLModel
 
 
+from enum import Enum
+
+class FileStatus(str, Enum):
+    PENDING = "PENDING"       # 等待处理
+    PARSING = "PARSING"       # 正在解析
+    INDEXING = "INDEXING"     # 正在向量化
+    COMPLETED = "COMPLETED"   # 处理完成
+    FAILED = "FAILED"         # 处理失败
+
 class FileParsingCache(SQLModel, table=True):
     __tablename__ = "file_parsing_cache"  # type: ignore
 
@@ -11,4 +20,10 @@ class FileParsingCache(SQLModel, table=True):
     content: str = Field(description="Parsed text content")
     file_type: str = Field(max_length=10)
     file_size: int = Field(default=0)
+    
+    # 状态管理
+    status: FileStatus = Field(default=FileStatus.PENDING, index=True)
+    indexed: bool = Field(default=False, description="Deprecated: use status instead")
+    error_message: str | None = Field(default=None)
+    
     created_at: datetime = Field(default_factory=datetime.now)

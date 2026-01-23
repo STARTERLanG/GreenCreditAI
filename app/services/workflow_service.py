@@ -8,23 +8,44 @@ from app.agents.summarizer import summarizer_agent
 from app.core.logging import logger
 from app.graph.definitions import create_base_graph
 from app.schemas.chat import ChatRequest
-from app.services.document_service import UPLOAD_CACHE
+from app.services.document_service import UPLOAD_CACHE, document_service
 from app.services.session_service import session_service
-
+from app.models.file import FileParsingCache
+from app.core.db import engine
+from sqlmodel import Session
 
 class WorkflowService:
-    # 节点友好名称映射
+    # ... (NODE_NAMES remain same)
     NODE_NAMES = {
         "router": "意图识别",
         "extractor": "信息提取",
         "auditor": "合规预审",
-        "policy_enrichment": "政策分析",  # 注意：graph definition 里叫 policy_enrichment
+        "policy_enrichment": "政策分析",
         "chat": "生成回复",
     }
 
     def __init__(self):
         self._memory = MemorySaver()
         self._graph = create_base_graph().compile(checkpointer=self._memory)
+
+    async def _get_file_content(self, file_hash: str) -> dict | None:
+        """从缓存或数据库获取文件内容"""
+        # 1. 查内存
+        if file_hash in UPLOAD_CACHE:
+            return UPLOAD_CACHE[file_hash]
+        
+        # 2. 查数据库
+        with Session(engine) as session:
+            file_record = session.get(FileParsingCache, file_hash)
+            if file_record:
+                data = {
+                    "content": file_record.content,
+                    "filename": file_record.filename,
+                }
+                # 回填缓存
+                UPLOAD_CACHE[file_hash] = data
+                return data
+        return None
 
     async def process_stream(self, request: ChatRequest) -> AsyncGenerator[str, None]:
         user_input = request.message
@@ -36,8 +57,8 @@ class WorkflowService:
         # 1. 准备输入
         new_docs, file_names, attachments_data = [], [], []
         for h in file_hashes:
-            if h in UPLOAD_CACHE:
-                file_info = UPLOAD_CACHE[h]
+            file_info = await self._get_file_content(h)
+            if file_info:
                 content = file_info["content"].strip()
                 new_docs.append(content)
                 file_names.append(file_info["filename"])

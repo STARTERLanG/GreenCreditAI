@@ -90,6 +90,26 @@ class VectorStoreService:
         logger.info(f"Searching for: {query}")
         return self.db.similarity_search(query, k=k)
 
+    def delete_by_metadata(self, key: str, value: str):
+        """通过元数据过滤删除文档"""
+        from qdrant_client.http import models as rest
+
+        self.initialize()
+        logger.info(f"[DB] Deleting vectors where {key} == {value}...")
+        self._client.delete(
+            collection_name=self.collection_name,
+            points_selector=rest.FilterSelector(
+                filter=rest.Filter(
+                    must=[
+                        rest.FieldCondition(
+                            key=f"metadata.{key}", match=rest.MatchValue(value=value)
+                        )
+                    ]
+                )
+            ),
+        )
+        logger.info("[DB] Delete command sent.")
+
     async def asearch(self, query: str, k: int = 4) -> list[Any]:
         """异步语义检索 (在线程池中运行同步操作)"""
         logger.info(f"[Async] Searching for: {query}")

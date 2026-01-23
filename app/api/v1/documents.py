@@ -20,30 +20,60 @@ class UploadResponse(BaseModel):
     file_hash: str
 
 
+from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
+
 @router.post("/upload", response_model=UploadResponse)
-async def upload_file(file: Annotated[UploadFile, File(...)]):
+async def upload_file(file: Annotated[UploadFile, File(...)], background_tasks: BackgroundTasks):
     """
-    上传文件并解析内容 (带数据库缓存去重)
+    上传文件并异步索引
     """
     try:
-        # process_file 现在返回 (content, hash, file_path)
         content, file_hash, file_path = await document_service.process_file(file)
 
-        # 缓存内容和路径
-        UPLOAD_CACHE[file_hash] = {
-            "content": content,
-            "filename": file.filename,
-            "path": file_path,
-        }
+        # 异步建立索引
+        background_tasks.add_task(document_service.index_document_task, file_hash)
 
         return UploadResponse(
             filename=file.filename,
             status="success",
-            message=f"文件处理完成，共 {len(content)} 字符。",
+            message=f"文件上传成功，正在后台建立索引。",
             file_hash=file_hash,
         )
     except Exception as e:
+        logger.exception(f"Upload failed: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.get("/list")
+async def list_documents():
+    """获取知识库文件列表"""
+    return document_service.list_documents()
+
+
+@router.post("/sync")
+async def sync_kb(background_tasks: BackgroundTasks):
+    """同步知识库目录 (knowledge_base/)"""
+    try:
+        results = await document_service.sync_knowledge_base(background_tasks)
+        return {"status": "success", "results": results}
+    except Exception as e:
+        logger.exception(f"Sync failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+@router.post("/index/{file_hash}")
+async def index_document(file_hash: str, background_tasks: BackgroundTasks):
+    """手动触发后台索引"""
+    background_tasks.add_task(document_service.index_document_task, file_hash)
+    return {"status": "success", "message": "Indexing task started in background."}
+
+
+@router.delete("/{file_hash}")
+async def delete_document(file_hash: str):
+    """从知识库中删除文件"""
+    if document_service.delete_document(file_hash):
+        return {"status": "success"}
+    raise HTTPException(status_code=404, detail="File not found")
 
 
 @router.get("/file/{file_hash}")

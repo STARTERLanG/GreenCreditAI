@@ -31,6 +31,11 @@ trigger: always_on
 - 使用现代类型注解语法：`X | Y`，而不是 `Optional[X]` 或 `Union[X]`
 - 为函数参数和返回值添加类型注解
 
+## 数据库与枚举规范 (Critical)
+- **Enum 一致性**: 枚举成员名（Name）应与枚举值（Value）保持大写一致（如 `STATUS = "STATUS"`），以防止 SQLAlchemy 在 SQLite 映射时因大小写不匹配导致的 `LookupError`。
+- **字段冗余**: 在重构期间，可保留旧字段（如 `indexed`）作为兼容层，但必须明确标记为 `Deprecated`，并在下个大版本中彻底移除。
+- **手动迁移**: 严禁依赖 `create_all` 进行表结构变更。所有字段新增必须编写 Python 迁移脚本或 SQL 变更记录，并确保在测试环境执行通过。
+
 ## 异常处理
 - **严禁裸捕获**: 禁止使用 `except:`，必须指定异常类型（如 `except Exception:` 或更具体的异常），防止捕获 `SystemExit` 等系统信号。
 - **保留异常链**: 重新抛出异常时，必须使用 `raise ... from e`，保留原始错误堆栈以便调试。
