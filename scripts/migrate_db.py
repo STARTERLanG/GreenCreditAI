@@ -1,7 +1,7 @@
-from sqlmodel import Session
-from app.core.db import engine
-from app.models.file import FileParsingCache
 from sqlalchemy import text
+
+from app.core.db import engine
+
 
 def migrate():
     with engine.connect() as conn:
@@ -14,6 +14,7 @@ def migrate():
                 print("Column 'indexed' already exists, skipping.")
             else:
                 print(f"Migration failed: {e}")
+
 
 if __name__ == "__main__":
     migrate()

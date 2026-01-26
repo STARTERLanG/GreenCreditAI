@@ -3,16 +3,17 @@ from collections.abc import AsyncGenerator
 from typing import Any
 
 from langgraph.checkpoint.memory import MemorySaver
+from sqlmodel import Session
 
 from app.agents.summarizer import summarizer_agent
+from app.core.db import engine
 from app.core.logging import logger
 from app.graph.definitions import create_base_graph
-from app.schemas.chat import ChatRequest
-from app.services.document_service import UPLOAD_CACHE, document_service
-from app.services.session_service import session_service
 from app.models.file import FileParsingCache
-from app.core.db import engine
-from sqlmodel import Session
+from app.schemas.chat import ChatRequest
+from app.services.document_service import UPLOAD_CACHE
+from app.services.session_service import session_service
+
 
 class WorkflowService:
     # ... (NODE_NAMES remain same)
@@ -33,7 +34,7 @@ class WorkflowService:
         # 1. 查内存
         if file_hash in UPLOAD_CACHE:
             return UPLOAD_CACHE[file_hash]
-        
+
         # 2. 查数据库
         with Session(engine) as session:
             file_record = session.get(FileParsingCache, file_hash)
@@ -47,7 +48,7 @@ class WorkflowService:
                 return data
         return None
 
-    async def process_stream(self, request: ChatRequest) -> AsyncGenerator[str, None]:
+    async def process_stream(self, request: ChatRequest, user_id: str | None = None) -> AsyncGenerator[str, None]:
         user_input = request.message
         session_id = request.session_id
         file_hashes = request.file_hashes
@@ -70,6 +71,7 @@ class WorkflowService:
             "session_id": session_id,
             "is_completed": False,
             "custom_tools": request.custom_tools,
+            "user_id": user_id,
         }
 
         # 0. 检查是否需要生成标题 (Fix: Check BEFORE appending user message)
@@ -86,7 +88,9 @@ class WorkflowService:
                     should_generate_title = True
 
         if session_id:
-            session_service.append_message(session_id, "user", user_input, attachments=attachments_data or None)
+            session_service.append_message(
+                session_id, "user", user_input, attachments=attachments_data or None, user_id=user_id
+            )
 
         full_ai_response = ""
         thought_logs = []  # 仅用于持久化存储，不用于流式传输
@@ -197,7 +201,9 @@ class WorkflowService:
                 else:
                     serializable_logs.append(str(log))
 
-            session_service.append_message(session_id, "assistant", full_ai_response, thought_process=serializable_logs)
+            session_service.append_message(
+                session_id, "assistant", full_ai_response, thought_process=serializable_logs, user_id=user_id
+            )
 
         if should_generate_title and session_id:
             try:

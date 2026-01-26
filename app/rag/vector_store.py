@@ -73,11 +73,17 @@ class VectorStoreService:
         return self._db
 
     @retry(stop=stop_after_attempt(3), wait=wait_fixed(2), reraise=True)
-    def add_documents(self, documents):
+    def add_documents(self, documents, user_id: str | None = None):
         """将文档列表添加到向量库"""
         if not documents:
             return
         logger.debug(f"[DB] 准备写入 {len(documents)} 个文档片段到 Qdrant...")
+
+        # 如果 user_id 存在，注入到 metadata 中
+        if user_id:
+            for doc in documents:
+                doc.metadata["user_id"] = user_id
+
         try:
             self.db.add_documents(documents=documents)
             logger.debug("[DB] 写入成功")
@@ -85,10 +91,19 @@ class VectorStoreService:
             logger.error(f"[DB] 写入失败，准备重试。错误详情: {e}")
             raise e
 
-    def search(self, query: str, k: int = 4):
+    def search(self, query: str, k: int = 4, user_id: str | None = None):
         """同步语义检索"""
-        logger.info(f"Searching for: {query}")
-        return self.db.similarity_search(query, k=k)
+        logger.info(f"Searching for: {query}, user_id={user_id}")
+
+        filter_condition = None
+        if user_id:
+            from qdrant_client.http import models as rest
+
+            filter_condition = rest.Filter(
+                must=[rest.FieldCondition(key="metadata.user_id", match=rest.MatchValue(value=user_id))]
+            )
+
+        return self.db.similarity_search(query, k=k, filter=filter_condition)
 
     def delete_by_metadata(self, key: str, value: str):
         """通过元数据过滤删除文档"""
@@ -100,22 +115,18 @@ class VectorStoreService:
             collection_name=self.collection_name,
             points_selector=rest.FilterSelector(
                 filter=rest.Filter(
-                    must=[
-                        rest.FieldCondition(
-                            key=f"metadata.{key}", match=rest.MatchValue(value=value)
-                        )
-                    ]
+                    must=[rest.FieldCondition(key=f"metadata.{key}", match=rest.MatchValue(value=value))]
                 )
             ),
         )
         logger.info("[DB] Delete command sent.")
 
-    async def asearch(self, query: str, k: int = 4) -> list[Any]:
+    async def asearch(self, query: str, k: int = 4, user_id: str | None = None) -> list[Any]:
         """异步语义检索 (在线程池中运行同步操作)"""
-        logger.info(f"[Async] Searching for: {query}")
+        logger.info(f"[Async] Searching for: {query}, user_id={user_id}")
         # 由于 Qdrant 本地客户端和 embed_query 都是同步阻塞的，必须放到线程池
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(None, lambda: self.search(query, k))
+        return await loop.run_in_executor(None, lambda: self.search(query, k, user_id=user_id))
 
 
 # 单例导出

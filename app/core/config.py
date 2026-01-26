@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     MODEL_EXPERT_NAME: str = "qwen-max"
     EMBEDDING_MODEL_NAME: str = "text-embedding-v3"
 
+    # Security
+    SECRET_KEY: str = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 Days
+
     # Storage
     BASE_DIR: Path = Path(__file__).resolve().parent.parent.parent
     VECTOR_DB_PERSIST_DIR: Path = BASE_DIR / "data" / "qdrant_db"

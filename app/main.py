@@ -51,6 +51,12 @@ async def read_root(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
 
 
+@app.get("/login")
+async def login_page(request: Request):
+    """登录页"""
+    return templates.TemplateResponse(request=request, name="login.html")
+
+
 if __name__ == "__main__":
     import uvicorn
 

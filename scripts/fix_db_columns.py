@@ -1,6 +1,7 @@
 import sqlite3
 from pathlib import Path
 
+
 def migrate():
     db_path = Path("data/greencredit.db")
     if not db_path.exists():
@@ -9,7 +10,7 @@ def migrate():
 
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
-    
+
     # 获取现有列
     cursor.execute("PRAGMA table_info(file_parsing_cache)")
     columns = [row[1] for row in cursor.fetchall()]
@@ -19,7 +20,7 @@ def migrate():
     new_cols = [
         ("status", "VARCHAR(20) DEFAULT 'COMPLETED'"),
         ("indexed", "BOOLEAN DEFAULT 0"),
-        ("error_message", "TEXT")
+        ("error_message", "TEXT"),
     ]
 
     for col_name, col_type in new_cols:
@@ -41,6 +42,7 @@ def migrate():
     conn.commit()
     conn.close()
     print("Migration finished.")
+
 
 if __name__ == "__main__":
     migrate()

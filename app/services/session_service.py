@@ -10,47 +10,60 @@ from app.models.session import ChatSession
 
 
 class SessionService:
-    def list_sessions(self) -> list[ChatSession]:
+    def list_sessions(self, user_id: str | None = None) -> list[ChatSession]:
         """获取所有会话，按时间倒序"""
         with Session(engine) as session:
             statement = select(ChatSession).order_by(ChatSession.created_at.desc())
+            if user_id:
+                statement = statement.where(ChatSession.user_id == user_id)
             results = session.exec(statement)
             return list(results.all())
 
-    def delete_session(self, session_id: str) -> bool:
+    def delete_session(self, session_id: str, user_id: str | None = None) -> bool:
         """删除会话"""
         with Session(engine) as session:
             chat_session = session.get(ChatSession, session_id)
             if chat_session:
+                # 权限检查
+                if user_id and chat_session.user_id and chat_session.user_id != user_id:
+                    return False
                 session.delete(chat_session)
                 session.commit()
                 return True
             return False
 
-    def delete_all_sessions(self) -> bool:
-        """删除所有会话"""
+    def delete_all_sessions(self, user_id: str | None = None) -> bool:
+        """删除用户的所有会话 (必须指定 user_id)"""
+        if not user_id:
+            logger.warning("Attempted to delete ALL sessions without user_id. Action blocked.")
+            return False
+
         with Session(engine) as session:
-            statement = select(ChatSession)
+            statement = select(ChatSession).where(ChatSession.user_id == user_id)
             results = session.exec(statement)
             for chat_session in results:
                 session.delete(chat_session)
             session.commit()
             return True
 
-    def create_session(self, title: str = "新对话") -> ChatSession:
+    def create_session(self, title: str = "新对话", user_id: str | None = None) -> ChatSession:
         """创建新会话"""
         with Session(engine) as session:
-            new_session = ChatSession(id=str(uuid4()), title=title, history="[]")
+            new_session = ChatSession(id=str(uuid4()), title=title, history="[]", user_id=user_id)
             session.add(new_session)
             session.commit()
             session.refresh(new_session)
             return new_session
 
-    def get_session(self, session_id: str) -> dict | None:
+    def get_session(self, session_id: str, user_id: str | None = None) -> dict | None:
         """获取会话详情并确保 history 是解析后的对象"""
         with Session(engine) as session:
             chat_session = session.get(ChatSession, session_id)
             if not chat_session:
+                return None
+
+            # 如果指定了 user_id，则检查归属权
+            if user_id and chat_session.user_id and chat_session.user_id != user_id:
                 return None
 
             # 将 SQLModel 对象转为字典，并手动处理 history
@@ -85,13 +98,19 @@ class SessionService:
             return []
 
     def append_message(
-        self, session_id: str, role: str, content: str, attachments: list = None, thought_process: list = None
+        self,
+        session_id: str,
+        role: str,
+        content: str,
+        attachments: list = None,
+        thought_process: list = None,
+        user_id: str | None = None,
     ):
         """追加消息到历史记录"""
         with Session(engine) as session:
             chat_session = session.get(ChatSession, session_id)
             if not chat_session:
-                chat_session = ChatSession(id=session_id, title="新对话", history="[]")
+                chat_session = ChatSession(id=session_id, title="新对话", history="[]", user_id=user_id)
                 session.add(chat_session)
 
             try:

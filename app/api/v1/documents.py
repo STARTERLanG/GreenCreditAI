@@ -1,13 +1,14 @@
 from typing import Annotated
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile, status
 from pydantic import BaseModel
 from sqlmodel import Session
 
+from app.api import deps
 from app.core.config import settings
 from app.core.db import engine
 from app.models.file import FileParsingCache
+from app.models.user import User
 from app.services.document_service import UPLOAD_CACHE, document_service
 
 router = APIRouter()
@@ -20,34 +21,34 @@ class UploadResponse(BaseModel):
     file_hash: str
 
 
-from fastapi import APIRouter, BackgroundTasks, File, HTTPException, UploadFile
-
-@router.post("/upload", response_model=UploadResponse)
-async def upload_file(file: Annotated[UploadFile, File(...)], background_tasks: BackgroundTasks):
-    """
-    上传文件并异步索引
-    """
-    try:
-        content, file_hash, file_path = await document_service.process_file(file)
-
-        # 异步建立索引
-        background_tasks.add_task(document_service.index_document_task, file_hash)
-
-        return UploadResponse(
-            filename=file.filename,
-            status="success",
-            message=f"文件上传成功，正在后台建立索引。",
-            file_hash=file_hash,
+@router.post("/upload")
+async def upload_file(
+    file: UploadFile = File(...),
+    current_user: Annotated[User, Depends(deps.get_current_user)] = None,
+):
+    """上传文件并进行解析"""
+    if not file.filename.endswith((".pdf", ".docx", ".txt", ".md")):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unsupported file type. Only PDF, DOCX, TXT, and MD files are allowed.",
         )
+    try:
+        # 读取文件内容
+        content = await file.read()
+
+        result = await document_service.process_file(
+            filename=file.filename, content=content, user_id=current_user.id if current_user else None
+        )
+        return result
     except Exception as e:
-        logger.exception(f"Upload failed: {e}")
+        # logger.exception(f"Upload failed: {e}") # Assuming logger is defined elsewhere
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.get("/list")
-async def list_documents():
+async def list_documents(current_user: Annotated[User, Depends(deps.get_current_user)] = None):
     """获取知识库文件列表"""
-    return document_service.list_documents()
+    return document_service.list_documents(user_id=current_user.id if current_user else None)
 
 
 @router.post("/sync")
@@ -57,23 +58,29 @@ async def sync_kb(background_tasks: BackgroundTasks):
         results = await document_service.sync_knowledge_base(background_tasks)
         return {"status": "success", "results": results}
     except Exception as e:
-        logger.exception(f"Sync failed: {e}")
+        # logger.exception(f"Sync failed: {e}") # Assuming logger is defined elsewhere
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
 @router.post("/index/{file_hash}")
-async def index_document(file_hash: str, background_tasks: BackgroundTasks):
-    """手动触发后台索引"""
-    background_tasks.add_task(document_service.index_document_task, file_hash)
-    return {"status": "success", "message": "Indexing task started in background."}
+async def index_document(
+    file_hash: str,
+    current_user: Annotated[User, Depends(deps.get_current_user)] = None,
+):
+    """手动触发索引"""
+    document_service.index_document_task(file_hash, user_id=current_user.id if current_user else None)
+    return {"status": "indexing_started", "file_hash": file_hash}
 
 
 @router.delete("/{file_hash}")
-async def delete_document(file_hash: str):
+async def delete_document(
+    file_hash: str,
+    current_user: Annotated[User, Depends(deps.get_current_user)],
+):
     """从知识库中删除文件"""
-    if document_service.delete_document(file_hash):
+    if document_service.delete_document(file_hash, user_id=current_user.id):
         return {"status": "success"}
-    raise HTTPException(status_code=404, detail="File not found")
+    raise HTTPException(status_code=404, detail="File not found or permission denied")
 
 
 @router.get("/file/{file_hash}")

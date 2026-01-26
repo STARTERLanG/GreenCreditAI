@@ -6,9 +6,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>绿色信贷智能助手</title>
     <link rel="icon" type="image/svg+xml" href="/static/img/logo.svg">
-    
+
     <!-- Anti-FOUC: Prevent unstyled flash -->
-    <style>html { opacity: 0; transition: opacity 0.25s ease-in-out; } html.loaded { opacity: 1; }</style>
+    <style>
+        html {
+            opacity: 0;
+            transition: opacity 0.25s ease-in-out;
+        }
+
+        html.loaded {
+            opacity: 1;
+        }
+    </style>
     <script>window.addEventListener('DOMContentLoaded', () => document.documentElement.classList.add('loaded'));</script>
 
     <!-- Local Libraries -->
@@ -40,7 +49,8 @@
 
         <!-- Brand Header -->
         <div class="h-20 flex items-center px-6 flex-shrink-0 sidebar-header transition-all duration-300">
-            <img src="/static/img/logo.svg" class="w-9 h-9 shadow-sm rounded-lg flex-shrink-0 transition-all duration-300" alt="Logo">
+            <img src="/static/img/logo.svg"
+                class="w-9 h-9 shadow-sm rounded-lg flex-shrink-0 transition-all duration-300" alt="Logo">
             <span
                 class="ml-3 text-lg font-bold text-[#1a302a] tracking-tight whitespace-nowrap overflow-hidden sidebar-text">绿色信贷智能助手</span>
         </div>
@@ -72,16 +82,19 @@
 
         <!-- Bottom User Info -->
         <div class="p-4 border-t border-[#d1e2da] sidebar-footer transition-all duration-300">
-            <div class="flex items-center justify-between space-x-2 px-2 py-2 rounded-xl hover:bg-white/50 transition-colors overflow-hidden group/user">
+            <div
+                class="flex items-center justify-between space-x-2 px-2 py-2 rounded-xl hover:bg-white/50 transition-colors overflow-hidden group/user">
                 <div class="flex items-center space-x-3 overflow-hidden flex-1 cursor-pointer sidebar-user-card">
-                    <img id="sidebar-user-avatar" src="/static/img/user-avatar.svg" class="w-8 h-8 rounded-full object-cover shadow-sm flex-shrink-0 transition-all duration-300">
+                    <img id="sidebar-user-avatar" src="/static/img/user-avatar.svg"
+                        class="w-8 h-8 rounded-full object-cover shadow-sm flex-shrink-0 transition-all duration-300">
                     <div class="text-sm text-[#2d4a43] whitespace-nowrap sidebar-text">
                         <div id="sidebar-user-name" class="font-medium truncate">Admin User</div>
                         <div class="text-[10px] text-emerald-600 font-medium truncate">Pro Edition</div>
                     </div>
                 </div>
                 <!-- Settings Btn -->
-                <button id="settings-btn" class="p-2 text-slate-400 hover:text-emerald-600 hover:bg-white rounded-lg transition-all sidebar-text">
+                <button id="settings-btn"
+                    class="p-2 text-slate-400 hover:text-emerald-600 hover:bg-white rounded-lg transition-all sidebar-text">
                     <i class="fas fa-cog"></i>
                 </button>
             </div>
@@ -96,9 +109,9 @@
 
     <!-- Main Content -->
     <main class="flex-1 flex bg-white relative h-full overflow-hidden">
-        
+
         <!-- ... (Main Content structure remains same) ... -->
-        
+
         <!-- Top Bar (Mobile) -->
         <div
             class="md:hidden absolute top-0 left-0 w-full h-14 border-b flex items-center px-4 justify-between bg-white z-50">
@@ -113,7 +126,10 @@
                 <div class="max-w-3xl mx-auto h-full flex flex-col">
                     <!-- Welcome Screen -->
                     <div id="welcome-screen" class="flex flex-col items-center justify-center space-y-10 min-h-[50vh]">
-                        <div id="loading-text" class="text-slate-400 text-sm animate-pulse">正在加载资源...</div><div id="error-log" class="text-red-500 text-xs mt-4 text-left max-w-lg overflow-auto max-h-48 hidden whitespace-pre-wrap font-mono bg-red-50 p-4 rounded-lg border border-red-100"></div>
+                        <div id="loading-text" class="text-slate-400 text-sm animate-pulse">正在加载资源...</div>
+                        <div id="error-log"
+                            class="text-red-500 text-xs mt-4 text-left max-w-lg overflow-auto max-h-48 hidden whitespace-pre-wrap font-mono bg-red-50 p-4 rounded-lg border border-red-100">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -190,530 +206,798 @@
         </div>
     </main>
 
-        <!-- Settings View (Full Screen Overlay in Main) -->
-        <div id="settings-view" class="absolute inset-0 z-40 bg-slate-900/40 backdrop-blur-sm flex flex-col hidden h-full w-full pt-8 pb-8 px-6 overflow-y-auto">
-            <!-- Centered Settings Window Wrapper -->
-            <div class="max-w-6xl w-full mx-auto flex flex-col flex-1 shadow-2xl rounded-2xl overflow-hidden animate-fade-in-up">
-                
-                <!-- Header (Floating-look inside Container) -->
-                <div class="h-16 border-b border-slate-100 bg-white flex items-center justify-between px-8 flex-shrink-0 z-50">
-                    <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white shadow-sm">
-                            <i class="fas fa-cog text-sm"></i>
-                        </div>
-                        <h2 class="text-xl font-bold text-slate-800">系统设置</h2>
+    <!-- Settings View (Full Screen Overlay in Main) -->
+    <div id="settings-view"
+        class="absolute inset-0 z-40 bg-slate-900/40 backdrop-blur-sm flex flex-col hidden h-full w-full pt-8 pb-8 px-6 overflow-y-auto">
+        <!-- Centered Settings Window Wrapper -->
+        <div
+            class="max-w-6xl w-full mx-auto flex flex-col flex-1 shadow-2xl rounded-2xl overflow-hidden animate-fade-in-up">
+
+            <!-- Header (Floating-look inside Container) -->
+            <div
+                class="h-16 border-b border-slate-100 bg-white flex items-center justify-between px-8 flex-shrink-0 z-50">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white shadow-sm">
+                        <i class="fas fa-cog text-sm"></i>
                     </div>
-                    <button id="close-settings-view-btn"
-                        class="text-slate-400 hover:text-red-500 transition-all p-2 rounded-xl hover:bg-red-50 active:scale-95">
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
+                    <h2 class="text-xl font-bold text-slate-800">系统设置</h2>
                 </div>
-    
-                <!-- Body Area -->
-                <div class="flex-1 flex overflow-hidden bg-white">
-                    <!-- Settings Sidebar -->
-                    <div class="w-64 bg-slate-50 border-r border-slate-100 flex flex-col py-8 flex-shrink-0">
-                        <nav class="space-y-1.5 px-4" id="settings-nav">
-                            <button
-                                class="settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold bg-emerald-600 text-white shadow-md shadow-emerald-200 transition-all"
-                                data-target="settings-general">
-                                <i class="fas fa-sliders-h w-5 text-center mr-3"></i> 通用设置
-                            </button>
-                            <button
-                                class="settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-slate-900 transition-all"
-                                data-target="settings-audit">
-                                <i class="fas fa-gavel w-5 text-center mr-3"></i> 审核标准
-                            </button>
-                            <div class="h-px bg-slate-200/50 my-4 mx-2"></div>
-                            <button
-                                class="settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-slate-900 transition-all"
-                                data-target="settings-kb">
-                                <i class="fas fa-database w-5 text-center mr-3"></i> 知识库
-                            </button>
-                            <button
-                                class="settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-slate-900 transition-all"
-                                data-target="settings-mcp">
-                                <i class="fas fa-network-wired w-5 text-center mr-3"></i> MCP 服务
-                            </button>
-                            <button
-                                class="settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-slate-900 transition-all"
-                                data-target="settings-api">
-                                <i class="fas fa-magic w-5 text-center mr-3"></i> API 工具
-                            </button>
-                            <div class="h-px bg-slate-200/50 my-4 mx-2"></div>
-                            <button
-                                class="settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-slate-900 transition-all"
-                                data-target="settings-about">
-                                <i class="fas fa-info-circle w-5 text-center mr-3"></i> 关于系统
-                            </button>
-                        </nav>
-                    </div>
-    
-                    <!-- Settings Content -->
-                    <div class="flex-1 overflow-y-auto bg-white relative">
-                        <div class="max-w-3xl mx-auto py-12 px-12 min-h-full">                    <!-- Section: General -->
-                    <section id="settings-general" class="settings-section space-y-8 fade-in-up">
-                        <div>
-                            <h3 class="text-xl font-bold text-slate-800 mb-1">通用设置</h3>
-                            <p class="text-sm text-slate-500">管理界面外观与应用数据</p>
-                        </div>
+                <button id="close-settings-view-btn"
+                    class="text-slate-400 hover:text-red-500 transition-all p-2 rounded-xl hover:bg-red-50 active:scale-95">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
 
-                        <!-- User Profile (Minimal Centered) -->
-                        <div class="flex flex-col items-center py-6 group/profile">
-                            <!-- Avatar -->
-                            <div class="relative cursor-pointer mb-8" onclick="document.getElementById('upload-avatar-input').click()">
-                                <div class="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-xl group-hover/profile:shadow-emerald-100 transition-all ring-1 ring-slate-200">
-                                    <img id="setting-user-avatar" src="/static/img/user-avatar.svg" class="w-full h-full object-cover">
-                                </div>
-                                <div class="absolute inset-0 bg-slate-900/40 rounded-full flex flex-col items-center justify-center opacity-0 hover:opacity-100 transition-all backdrop-blur-[1px]">
-                                    <i class="fas fa-camera text-white text-2xl mb-1"></i>
-                                    <span class="text-[10px] text-white font-medium uppercase tracking-wider">Change</span>
-                                </div>
-                                <input type="file" id="upload-avatar-input" class="hidden" accept="image/png, image/jpeg, image/webp">
-                            </div>
-                            
-                            <!-- Info Inputs (Centered & Seamless) -->
-                            <div class="w-full max-w-md text-center">
-                                <div class="relative inline-block w-full">
-                                    <input type="text" id="setting-user-name" 
-                                        class="w-full bg-transparent border-none text-center text-3xl font-extrabold text-slate-800 placeholder-slate-300 focus:outline-none focus:ring-0 transition-all" 
-                                        placeholder="您的姓名" value="绿金分析师">
-                                    <!-- Decorative Line -->
-                                    <div class="absolute bottom-[-12px] left-1/2 -translate-x-1/2 w-16 h-1 bg-emerald-500 rounded-full opacity-0 group-hover/profile:opacity-100 transition-opacity"></div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="space-y-4">
-                            <!-- Font Size -->
-                            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between transition-shadow hover:shadow-md">
-                                <div>
-                                    <div class="text-sm font-semibold text-slate-800">字体大小</div>
-                                    <div class="text-xs text-slate-500 mt-1">调整聊天内容的文字显示大小</div>
-                                </div>
-                                <div class="flex bg-slate-100 rounded-lg p-1 border border-slate-200" id="view-font-size-group">
-                                    <button class="font-size-opt px-4 py-1.5 text-xs font-medium rounded-md bg-white shadow-sm text-emerald-700 transition-all" data-value="normal">标准</button>
-                                    <button class="font-size-opt px-4 py-1.5 text-xs font-medium rounded-md text-slate-500 hover:text-slate-900 transition-all" data-value="large">大号</button>
-                                </div>
+            <!-- Body Area -->
+            <div class="flex-1 flex overflow-hidden bg-white">
+                <!-- Settings Sidebar -->
+                <div class="w-64 bg-slate-50 border-r border-slate-100 flex flex-col py-8 flex-shrink-0">
+                    <nav class="space-y-1.5 px-4" id="settings-nav">
+                        <button
+                            class="settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold bg-emerald-600 text-white shadow-md shadow-emerald-200 transition-all"
+                            data-target="settings-general">
+                            <i class="fas fa-sliders-h w-5 text-center mr-3"></i> 通用设置
+                        </button>
+                        <button
+                            class="settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-slate-900 transition-all"
+                            data-target="settings-audit">
+                            <i class="fas fa-gavel w-5 text-center mr-3"></i> 审核标准
+                        </button>
+                        <button
+                            class="settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-slate-900 transition-all"
+                            data-target="settings-org">
+                            <i class="fas fa-sitemap w-5 text-center mr-3"></i> 组织架构
+                        </button>
+                        <div class="h-px bg-slate-200/50 my-4 mx-2"></div>
+                        <button
+                            class="settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-slate-900 transition-all"
+                            data-target="settings-kb">
+                            <i class="fas fa-database w-5 text-center mr-3"></i> 知识库
+                        </button>
+                        <button
+                            class="settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-slate-900 transition-all"
+                            data-target="settings-skills">
+                            <i class="fas fa-brain w-5 text-center mr-3"></i> Skills
+                        </button>
+                        <button
+                            class="settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-slate-900 transition-all"
+                            data-target="settings-mcp">
+                            <i class="fas fa-network-wired w-5 text-center mr-3"></i> MCP 服务
+                        </button>
+                        <button
+                            class="settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-slate-900 transition-all"
+                            data-target="settings-api">
+                            <i class="fas fa-magic w-5 text-center mr-3"></i> API 工具
+                        </button>
+                        <div class="h-px bg-slate-200/50 my-4 mx-2"></div>
+                        <button
+                            class="settings-nav-item w-full text-left px-4 py-3 rounded-xl text-sm font-semibold text-slate-500 hover:bg-white hover:text-slate-900 transition-all"
+                            data-target="settings-about">
+                            <i class="fas fa-info-circle w-5 text-center mr-3"></i> 关于系统
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Settings Content -->
+                <div class="flex-1 overflow-y-auto bg-white relative">
+                    <div class="max-w-3xl mx-auto py-12 px-12 min-h-full"> <!-- Section: General -->
+                        <section id="settings-general" class="settings-section space-y-8 fade-in-up">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-800 mb-1">通用设置</h3>
+                                <p class="text-sm text-slate-500">管理界面外观与应用数据</p>
                             </div>
 
-                            <!-- Density -->
-                            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between transition-shadow hover:shadow-md">
-                                <div>
-                                    <div class="text-sm font-semibold text-slate-800">界面密度</div>
-                                    <div class="text-xs text-slate-500 mt-1">调整消息间距与信息展示密度</div>
-                                </div>
-                                <div class="flex bg-slate-100 rounded-lg p-1 border border-slate-200" id="view-density-group">
-                                    <button class="density-opt px-4 py-1.5 text-xs font-medium rounded-md bg-white shadow-sm text-emerald-700 transition-all" data-value="normal">宽松</button>
-                                    <button class="density-opt px-4 py-1.5 text-xs font-medium rounded-md text-slate-500 hover:text-slate-900 transition-all" data-value="compact">紧凑</button>
-                                </div>
-                            </div>
-
-                            <!-- CoT -->
-                            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between transition-shadow hover:shadow-md">
-                                <div>
-                                    <div class="text-sm font-semibold text-slate-800">思维链 (CoT)</div>
-                                    <div class="text-xs text-slate-500 mt-1">自动展开 AI 的推理与思考过程</div>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" id="view-setting-auto-expand" class="sr-only peer">
-                                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
-                                </label>
-                            </div>
-                            
-                             <!-- Danger Zone -->
-                            <div class="pt-4">
-                                <h4 class="text-xs font-bold text-red-400 uppercase tracking-wider mb-3 ml-1">危险区域</h4>
-                                <div class="bg-red-50 p-5 rounded-2xl border border-red-100 flex items-center justify-between">
-                                    <div>
-                                        <div class="text-sm font-semibold text-red-800">清除所有数据</div>
-                                        <div class="text-xs text-red-600/70 mt-1">删除所有历史会话记录，此操作无法恢复</div>
+                            <!-- User Profile (Minimal Centered) -->
+                            <div class="flex flex-col items-center py-6 group/profile">
+                                <!-- Avatar -->
+                                <div class="relative cursor-pointer mb-8"
+                                    onclick="document.getElementById('upload-avatar-input').click()">
+                                    <div
+                                        class="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-xl group-hover/profile:shadow-emerald-100 transition-all ring-1 ring-slate-200">
+                                        <img id="setting-user-avatar" src="/static/img/user-avatar.svg"
+                                            class="w-full h-full object-cover">
                                     </div>
-                                    <button id="btn-clear-all-data" class="px-4 py-2 bg-white border border-red-200 text-red-600 text-xs font-medium rounded-lg hover:bg-red-600 hover:text-white transition-colors shadow-sm">
-                                        立即清除
+                                    <div
+                                        class="absolute inset-0 bg-slate-900/40 rounded-full flex flex-col items-center justify-center opacity-0 hover:opacity-100 transition-all backdrop-blur-[1px]">
+                                        <i class="fas fa-camera text-white text-2xl mb-1"></i>
+                                        <span
+                                            class="text-[10px] text-white font-medium uppercase tracking-wider">Change</span>
+                                    </div>
+                                    <input type="file" id="upload-avatar-input" class="hidden"
+                                        accept="image/png, image/jpeg, image/webp">
+                                </div>
+
+                                <!-- Info Inputs (Centered & Seamless) -->
+                                <div class="w-full max-w-md text-center">
+                                    <div class="relative inline-block w-full mb-4">
+                                        <input type="text" id="setting-user-name"
+                                            class="w-full bg-transparent border-none text-center text-3xl font-extrabold text-slate-800 placeholder-slate-300 focus:outline-none focus:ring-0 transition-all"
+                                            placeholder="您的姓名" value="绿金分析师">
+                                        <!-- Decorative Line -->
+                                        <div
+                                            class="absolute bottom-[-12px] left-1/2 -translate-x-1/2 w-16 h-1 bg-emerald-500 rounded-full opacity-0 group-hover/profile:opacity-100 transition-opacity">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- User ID Display -->
+                                <div class="flex items-center justify-center gap-2 mt-2" title="您的用户 ID (后端生成)">
+                                    <span
+                                        class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">ID</span>
+                                    <code id="setting-user-id"
+                                        class="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-1 rounded select-all">checking...</code>
+                                </div>
+                                <!-- Logout Button -->
+                                <div class="mt-6">
+                                    <button onclick="window.handleLogout()"
+                                        class="px-4 py-1.5 bg-white border border-slate-200 hover:bg-red-50 hover:border-red-200 text-slate-500 hover:text-red-600 text-xs font-medium rounded-full transition-all shadow-sm active:scale-95">
+                                        <i class="fas fa-sign-out-alt mr-1"></i> 退出登录
                                     </button>
                                 </div>
                             </div>
-                        </div>
-                    </section>
 
-                    <!-- Section: Audit Standards -->
-                    <section id="settings-audit" class="settings-section space-y-8 fade-in-up hidden">
-                        <div>
-                            <h3 class="text-xl font-bold text-slate-800 mb-1">审核标准设置</h3>
-                            <p class="text-sm text-slate-500">设定 AI 在绿色信贷评估与合规审查时的尺度与倾向</p>
-                        </div>
 
-                        <!-- Info Box -->
-                        <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-4 items-start">
-                            <div class="text-blue-600 mt-1"><i class="fas fa-traffic-light text-xl"></i></div>
-                            <div>
-                                <h4 class="text-sm font-bold text-blue-800">如何选择审核模式？</h4>
-                                <p class="text-xs text-blue-600/80 mt-1 leading-relaxed">不同的模式决定了 AI 判读风险时的“性格”。<strong>严格合规</strong>适用于初筛阶段的风险排查；<strong>标准研判</strong>适用于常规审批；<strong>建设性指导</strong>则适用于贷后辅导或协助客户整改。请根据当前的业务流程阶段灵活切换。</p>
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-1 gap-5" id="audit-mode-group">
-                            <!-- Strict -->
-                            <div class="audit-mode-card cursor-pointer group relative bg-white p-6 rounded-2xl border-2 border-slate-200 hover:border-slate-400 transition-all duration-200" data-mode="strict">
-                                <div class="absolute top-6 right-6 text-slate-600 opacity-0 check-icon transition-opacity"><i class="fas fa-check-circle text-2xl"></i></div>
-                                <div class="flex items-start space-x-5">
-                                    <div class="w-12 h-12 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-xl flex-shrink-0"><i class="fas fa-shield-alt"></i></div>
+                            <div class="space-y-4">
+                                <!-- Font Size -->
+                                <div
+                                    class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between transition-shadow hover:shadow-md">
                                     <div>
-                                        <h4 class="text-lg font-bold text-slate-800 mb-1">严格合规 (Strict)</h4>
-                                        <div class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 mb-2 uppercase tracking-wide">Risk Averse</div>
-                                        <p class="text-sm text-slate-500 leading-relaxed">严格执行《绿色产业指导目录》与信贷指引。对资料不全、指标模糊或存在环境风险隐患的项目，采取“一票否决”或最高级别风险提示。不主动进行合规性推演。</p>
+                                        <div class="text-sm font-semibold text-slate-800">字体大小</div>
+                                        <div class="text-xs text-slate-500 mt-1">调整聊天内容的文字显示大小</div>
+                                    </div>
+                                    <div class="flex bg-slate-100 rounded-lg p-1 border border-slate-200"
+                                        id="view-font-size-group">
+                                        <button
+                                            class="font-size-opt px-4 py-1.5 text-xs font-medium rounded-md bg-white shadow-sm text-emerald-700 transition-all"
+                                            data-value="normal">标准</button>
+                                        <button
+                                            class="font-size-opt px-4 py-1.5 text-xs font-medium rounded-md text-slate-500 hover:text-slate-900 transition-all"
+                                            data-value="large">大号</button>
+                                    </div>
+                                </div>
+
+                                <!-- Density -->
+                                <div
+                                    class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between transition-shadow hover:shadow-md">
+                                    <div>
+                                        <div class="text-sm font-semibold text-slate-800">界面密度</div>
+                                        <div class="text-xs text-slate-500 mt-1">调整消息间距与信息展示密度</div>
+                                    </div>
+                                    <div class="flex bg-slate-100 rounded-lg p-1 border border-slate-200"
+                                        id="view-density-group">
+                                        <button
+                                            class="density-opt px-4 py-1.5 text-xs font-medium rounded-md bg-white shadow-sm text-emerald-700 transition-all"
+                                            data-value="normal">宽松</button>
+                                        <button
+                                            class="density-opt px-4 py-1.5 text-xs font-medium rounded-md text-slate-500 hover:text-slate-900 transition-all"
+                                            data-value="compact">紧凑</button>
+                                    </div>
+                                </div>
+
+                                <!-- CoT -->
+                                <div
+                                    class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between transition-shadow hover:shadow-md">
+                                    <div>
+                                        <div class="text-sm font-semibold text-slate-800">思维链 (CoT)</div>
+                                        <div class="text-xs text-slate-500 mt-1">自动展开 AI 的推理与思考过程</div>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="view-setting-auto-expand" class="sr-only peer">
+                                        <div
+                                            class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500">
+                                        </div>
+                                    </label>
+                                </div>
+
+                                <!-- Danger Zone -->
+                                <div class="pt-4">
+                                    <h4 class="text-xs font-bold text-red-400 uppercase tracking-wider mb-3 ml-1">危险区域
+                                    </h4>
+                                    <div
+                                        class="bg-red-50 p-5 rounded-2xl border border-red-100 flex items-center justify-between">
+                                        <div>
+                                            <div class="text-sm font-semibold text-red-800">清除所有数据</div>
+                                            <div class="text-xs text-red-600/70 mt-1">删除所有历史会话记录，此操作无法恢复</div>
+                                        </div>
+                                        <button id="btn-clear-all-data"
+                                            class="px-4 py-2 bg-white border border-red-200 text-red-600 text-xs font-medium rounded-lg hover:bg-red-600 hover:text-white transition-colors shadow-sm">
+                                            立即清除
+                                        </button>
+                                    </div>
+
+                                    <!-- Delete Account -->
+                                    <div
+                                        class="bg-red-50 p-5 rounded-2xl border border-red-100 flex items-center justify-between mt-4">
+                                        <div>
+                                            <div class="text-sm font-semibold text-red-800">注销账户</div>
+                                            <div class="text-xs text-red-600/70 mt-1">永久删除当前账号及所有个人数据</div>
+                                        </div>
+                                        <button onclick="window.handleDeleteAccount()"
+                                            class="px-4 py-2 bg-white border border-red-200 text-red-600 text-xs font-medium rounded-lg hover:bg-red-600 hover:text-white transition-colors shadow-sm">
+                                            注销账号
+                                        </button>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <!-- Standard -->
-                            <div class="audit-mode-card cursor-pointer group relative bg-white p-6 rounded-2xl border-2 border-emerald-500 ring-4 ring-emerald-500/10 transition-all duration-200" data-mode="standard">
-                                <div class="absolute top-6 right-6 text-emerald-600 opacity-100 check-icon transition-opacity"><i class="fas fa-check-circle text-2xl"></i></div>
-                                <div class="flex items-start space-x-5">
-                                    <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl flex-shrink-0"><i class="fas fa-balance-scale"></i></div>
-                                    <div>
-                                        <h4 class="text-lg font-bold text-slate-800 mb-1">标准研判 (Standard)</h4>
-                                        <div class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 mb-2 uppercase tracking-wide">Balanced</div>
-                                        <p class="text-sm text-slate-500 leading-relaxed">遵循行业通行审核惯例。在严格把控实质性风险的前提下，结合项目实际情况进行客观评估。对非原则性瑕疵提示风险并要求补充说明，而非直接否决。</p>
-                                    </div>
-                                </div>
-                            </div>
+                        </section>
 
-                            <!-- Advisory -->
-                            <div class="audit-mode-card cursor-pointer group relative bg-white p-6 rounded-2xl border-2 border-slate-200 hover:border-blue-400 transition-all duration-200" data-mode="advisory">
-                                <div class="absolute top-6 right-6 text-blue-500 opacity-0 check-icon transition-opacity"><i class="fas fa-check-circle text-2xl"></i></div>
-                                <div class="flex items-start space-x-5">
-                                    <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl flex-shrink-0"><i class="fas fa-hand-holding-heart"></i></div>
-                                    <div>
-                                        <h4 class="text-lg font-bold text-slate-800 mb-1">建设性指导 (Advisory)</h4>
-                                        <div class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 mb-2 uppercase tracking-wide">Supportive</div>
-                                        <p class="text-sm text-slate-500 leading-relaxed">以促进绿色转型为目标。倾向于挖掘项目潜在的绿色价值，主动识别合规差距，并生成具体的整改建议与优化路径，辅助客户达到准入标准。</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- Section: Knowledge Base -->
-                    <section id="settings-kb" class="settings-section space-y-8 fade-in-up hidden">
-                        <div class="flex items-center justify-between">
+                        <!-- Section: Audit Standards -->
+                        <section id="settings-audit" class="settings-section space-y-8 fade-in-up hidden">
                             <div>
-                                <h3 class="text-xl font-bold text-slate-800 mb-1">知识库管理</h3>
-                                <p class="text-sm text-slate-500">管理 RAG 检索增强生成的文档与索引</p>
+                                <h3 class="text-xl font-bold text-slate-800 mb-1">审核标准设置</h3>
+                                <p class="text-sm text-slate-500">设定 AI 在绿色信贷评估与合规审查时的尺度与倾向</p>
                             </div>
-                            <div class="flex gap-2">
-                                <button id="btn-sync-kb" class="px-4 py-2 bg-white border border-slate-200 text-slate-600 hover:text-emerald-600 text-sm font-medium rounded-lg shadow-sm transition-all flex items-center gap-2 active:scale-95">
-                                    <i class="fas fa-sync"></i> 同步目录
-                                </button>
-                                <button id="btn-upload-kb" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg shadow-sm transition-all flex items-center gap-2 active:scale-95">
-                                    <i class="fas fa-cloud-upload-alt"></i> 上传文档
-                                </button>
-                            </div>
-                        </div>
 
-                        <!-- Info Box -->
-                        <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-4 items-start">
-                            <div class="text-blue-600 mt-1"><i class="fas fa-book-reader text-xl"></i></div>
-                            <div>
-                                <h4 class="text-sm font-bold text-blue-800">如何建立知识库？</h4>
-                                <p class="text-xs text-blue-600/80 mt-1 leading-relaxed">上传您的信贷政策、行业标准或私有财报文档。系统会自动解析并索引这些文件，让 AI 在回答问题时能够精准检索并引用这些权威依据（RAG 技术），有效解决大模型“幻觉”问题。</p>
-                            </div>
-                        </div>
-
-                        <!-- Stats -->
-                        <div class="grid grid-cols-3 gap-4">
-                            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">已索引文档</div>
-                                <div class="text-2xl font-bold text-slate-800" id="kb-stats-docs">0 <span class="text-sm font-normal text-slate-400">份</span></div>
-                            </div>
-                            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">系统状态</div>
-                                <div class="text-lg font-bold text-emerald-600" id="kb-stats-chunks">Ready</div>
-                            </div>
-                            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-                                <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">最近同步</div>
-                                <div class="text-lg font-bold text-slate-800" id="kb-stats-last-update">-</div>
-                            </div>
-                        </div>
-
-                        <!-- File List -->
-                        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[200px]">
-                            <table class="w-full text-sm text-left">
-                                <thead class="bg-slate-50 border-b border-slate-200 text-xs text-slate-500 uppercase">
-                                    <tr>
-                                        <th class="px-6 py-3 font-medium">文件名</th>
-                                        <th class="px-6 py-3 font-medium">类型</th>
-                                        <th class="px-6 py-3 font-medium">状态</th>
-                                        <th class="px-6 py-3 font-medium text-right">操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100">
-                                    <!-- Dynamic items -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </section>
-
-                    <!-- Section: MCP -->
-                    <section id="settings-mcp" class="settings-section space-y-8 fade-in-up hidden">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h3 class="text-xl font-bold text-slate-800 mb-1">Model Context Protocol (MCP)</h3>
-                                <p class="text-sm text-slate-500">连接外部数据源与工具，扩展 AI 能力边界</p>
-                            </div>
-                            <button onclick="window.openMcpEditor()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg shadow-sm transition-all flex items-center gap-2 active:scale-95">
-                                <i class="fas fa-plus"></i> 添加服务
-                            </button>
-                        </div>
-                        
-                        <!-- Info Box -->
-                        <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-4 items-start">
-                            <div class="text-blue-600 mt-1"><i class="fas fa-plug text-xl"></i></div>
-                            <div>
-                                <h4 class="text-sm font-bold text-blue-800">什么是 MCP?</h4>
-                                <p class="text-xs text-blue-600/80 mt-1 leading-relaxed">MCP 是一种开放标准协议。通过配置 MCP Server，您可以让 AI 安全地访问本地文件、数据库或远程服务，而无需编写专门的 Tool 代码。</p>
-                            </div>
-                        </div>
-
-                        <!-- Editor Container (Hidden) -->
-                        <div id="mcp-editor-container" class="hidden bg-white p-6 rounded-2xl border border-blue-500 shadow-md ring-4 ring-blue-500/10 mb-6 transition-all">
-                            <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
-                                <h4 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                    <i class="fas fa-server text-blue-600"></i> <span id="mcp-editor-title">配置 MCP 服务</span>
-                                </h4>
-                                <button onclick="window.closeMcpEditor()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-lg"></i></button>
-                            </div>
-                            
-                            <div class="space-y-5">
-                                <input type="hidden" id="edit-mcp-id">
-                                
-                                <!-- JSON Editor -->
+                            <!-- Info Box -->
+                            <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-4 items-start">
+                                <div class="text-blue-600 mt-1"><i class="fas fa-traffic-light text-xl"></i></div>
                                 <div>
-                                    <div class="flex justify-between items-center mb-2">
-                                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider">Configuration (JSON)</label>
-                                        <div class="flex gap-2">
-                                            <button onclick="window.loadMcpTemplate('stdio')" class="text-[10px] text-slate-500 hover:text-blue-600">Stdio Template</button>
-                                            <span class="text-slate-300">|</span>
-                                            <button onclick="window.loadMcpTemplate('sse')" class="text-[10px] text-slate-500 hover:text-blue-600">SSE Template</button>
-                                            <span class="text-slate-300">|</span>
-                                            <button onclick="window.formatJson('edit-mcp-json')" class="text-[10px] text-blue-600 hover:underline font-bold">Format JSON</button>
+                                    <h4 class="text-sm font-bold text-blue-800">如何选择审核模式？</h4>
+                                    <p class="text-xs text-blue-600/80 mt-1 leading-relaxed">不同的模式决定了 AI
+                                        判读风险时的“性格”。<strong>严格合规</strong>适用于初筛阶段的风险排查；<strong>标准研判</strong>适用于常规审批；<strong>建设性指导</strong>则适用于贷后辅导或协助客户整改。请根据当前的业务流程阶段灵活切换。
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-5" id="audit-mode-group">
+                                <!-- Strict -->
+                                <div class="audit-mode-card cursor-pointer group relative bg-white p-6 rounded-2xl border-2 border-slate-200 hover:border-slate-400 transition-all duration-200"
+                                    data-mode="strict">
+                                    <div
+                                        class="absolute top-6 right-6 text-slate-600 opacity-0 check-icon transition-opacity">
+                                        <i class="fas fa-check-circle text-2xl"></i>
+                                    </div>
+                                    <div class="flex items-start space-x-5">
+                                        <div
+                                            class="w-12 h-12 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-xl flex-shrink-0">
+                                            <i class="fas fa-shield-alt"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-lg font-bold text-slate-800 mb-1">严格合规 (Strict)</h4>
+                                            <div
+                                                class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 mb-2 uppercase tracking-wide">
+                                                Risk Averse</div>
+                                            <p class="text-sm text-slate-500 leading-relaxed">
+                                                严格执行《绿色产业指导目录》与信贷指引。对资料不全、指标模糊或存在环境风险隐患的项目，采取“一票否决”或最高级别风险提示。不主动进行合规性推演。
+                                            </p>
                                         </div>
                                     </div>
-                                    <textarea id="edit-mcp-json" rows="12" class="w-full border border-slate-300 rounded-lg p-4 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-900 text-emerald-400 resize-none leading-relaxed" placeholder='{
+                                </div>
+
+                                <!-- Standard -->
+                                <div class="audit-mode-card cursor-pointer group relative bg-white p-6 rounded-2xl border-2 border-emerald-500 ring-4 ring-emerald-500/10 transition-all duration-200"
+                                    data-mode="standard">
+                                    <div
+                                        class="absolute top-6 right-6 text-emerald-600 opacity-100 check-icon transition-opacity">
+                                        <i class="fas fa-check-circle text-2xl"></i>
+                                    </div>
+                                    <div class="flex items-start space-x-5">
+                                        <div
+                                            class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl flex-shrink-0">
+                                            <i class="fas fa-balance-scale"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-lg font-bold text-slate-800 mb-1">标准研判 (Standard)</h4>
+                                            <div
+                                                class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700 mb-2 uppercase tracking-wide">
+                                                Balanced</div>
+                                            <p class="text-sm text-slate-500 leading-relaxed">
+                                                遵循行业通行审核惯例。在严格把控实质性风险的前提下，结合项目实际情况进行客观评估。对非原则性瑕疵提示风险并要求补充说明，而非直接否决。</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Advisory -->
+                                <div class="audit-mode-card cursor-pointer group relative bg-white p-6 rounded-2xl border-2 border-slate-200 hover:border-blue-400 transition-all duration-200"
+                                    data-mode="advisory">
+                                    <div
+                                        class="absolute top-6 right-6 text-blue-500 opacity-0 check-icon transition-opacity">
+                                        <i class="fas fa-check-circle text-2xl"></i>
+                                    </div>
+                                    <div class="flex items-start space-x-5">
+                                        <div
+                                            class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl flex-shrink-0">
+                                            <i class="fas fa-hand-holding-heart"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-lg font-bold text-slate-800 mb-1">建设性指导 (Advisory)</h4>
+                                            <div
+                                                class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 mb-2 uppercase tracking-wide">
+                                                Supportive</div>
+                                            <p class="text-sm text-slate-500 leading-relaxed">
+                                                以促进绿色转型为目标。倾向于挖掘项目潜在的绿色价值，主动识别合规差距，并生成具体的整改建议与优化路径，辅助客户达到准入标准。</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Section: Organization -->
+                        <section id="settings-org" class="settings-section space-y-8 fade-in-up hidden">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-800 mb-1">组织架构</h3>
+                                <p class="text-sm text-slate-500">配置企业层级、部门结构与用户权限</p>
+                            </div>
+
+                            <!-- Info Box -->
+                            <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex gap-4 items-start">
+                                <div class="text-indigo-600 mt-1"><i class="fas fa-sitemap text-xl"></i></div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-indigo-800">为什么需要组织架构？</h4>
+                                    <p class="text-xs text-indigo-600/80 mt-1 leading-relaxed">
+                                        大型金融机构通常具有复杂的汇报关系。通过映射真实的组织架构，系统可以实现更细粒度的数据隔离（如：支行行长仅能查看该支行项目）和审批流转控制。
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-12 text-center">
+                                <div
+                                    class="w-16 h-16 bg-white text-slate-300 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm text-2xl">
+                                    <i class="fas fa-building"></i>
+                                </div>
+                                <h4 class="text-slate-600 font-bold mb-2">功能规划中</h4>
+                                <p class="text-sm text-slate-400 max-w-xs mx-auto">
+                                    我们正在构建企业级多租户管理系统，后续将支持：<br>
+                                    - 部门/团队创建与管理<br>
+                                    - RBAC 基于角色的权限控制<br>
+                                    - 跨部门项目流转
+                                </p>
+                            </div>
+                        </section>
+
+                        <!-- Section: Skills -->
+                        <section id="settings-skills" class="settings-section space-y-8 fade-in-up hidden">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-800 mb-1">Skills 技能插件</h3>
+                                <p class="text-sm text-slate-500">安装与管理 AI 专业技能包</p>
+                            </div>
+
+                            <!-- Info Box -->
+                            <div class="bg-purple-50 border border-purple-100 rounded-xl p-4 flex gap-4 items-start">
+                                <div class="text-purple-600 mt-1"><i class="fas fa-brain text-xl"></i></div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-purple-800">什么是 Skills？</h4>
+                                    <p class="text-xs text-purple-600/80 mt-1 leading-relaxed">
+                                        Skills 是预先封装好的专业能力模块。与通用的 API 工具不同，Skills 包含特定的业务逻辑、提示词工程和工作流编排。例如，“财务报表分析
+                                        Skill” 不仅读取 PDF，还懂得如何计算偿债比率并生成专业评语。
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4">
+                                <!-- Placeholders for Skill Cards -->
+                                <div
+                                    class="bg-white p-5 rounded-2xl border border-slate-200 opacity-60 pointer-events-none">
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <div
+                                            class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-file-invoice-dollar"></i></div>
+                                        <div>
+                                            <div class="font-bold text-slate-800 text-sm">财务报表深度分析</div>
+                                            <div class="text-[10px] text-slate-400">Finance Pro Pack</div>
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-slate-500">自动提取资产负债表关键指标，计算 20+ 项财务比率并进行同业对比。</p>
+                                </div>
+                                <div
+                                    class="bg-white p-5 rounded-2xl border border-slate-200 opacity-60 pointer-events-none">
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <div
+                                            class="w-10 h-10 bg-amber-100 text-amber-600 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-search-location"></i></div>
+                                        <div>
+                                            <div class="font-bold text-slate-800 text-sm">企业舆情风险扫描</div>
+                                            <div class="text-[10px] text-slate-400">Risk Radar</div>
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-slate-500">实时检索互联网公开信息，识别企业的环保处罚、法律诉讼等负面舆情。</p>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-50 border border-slate-200 rounded-xl p-6 text-center mt-4">
+                                <p class="text-xs text-slate-500">
+                                    <i class="fas fa-rocket mr-1 text-slate-400"></i> 更多专业技能正在开发中...
+                                </p>
+                            </div>
+                        </section>
+
+                        <!-- Section: Knowledge Base -->
+                        <section id="settings-kb" class="settings-section space-y-8 fade-in-up hidden">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-xl font-bold text-slate-800 mb-1">知识库管理</h3>
+                                    <p class="text-sm text-slate-500">管理 RAG 检索增强生成的文档与索引</p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button id="btn-sync-kb"
+                                        class="px-4 py-2 bg-white border border-slate-200 text-slate-600 hover:text-emerald-600 text-sm font-medium rounded-lg shadow-sm transition-all flex items-center gap-2 active:scale-95">
+                                        <i class="fas fa-sync"></i> 同步目录
+                                    </button>
+                                    <button id="btn-upload-kb"
+                                        class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg shadow-sm transition-all flex items-center gap-2 active:scale-95">
+                                        <i class="fas fa-cloud-upload-alt"></i> 上传文档
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Info Box -->
+                            <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-4 items-start">
+                                <div class="text-blue-600 mt-1"><i class="fas fa-book-reader text-xl"></i></div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-blue-800">如何建立知识库？</h4>
+                                    <p class="text-xs text-blue-600/80 mt-1 leading-relaxed">
+                                        上传您的信贷政策、行业标准或私有财报文档。系统会自动解析并索引这些文件，让 AI 在回答问题时能够精准检索并引用这些权威依据（RAG
+                                        技术），有效解决大模型“幻觉”问题。</p>
+                                </div>
+                            </div>
+
+                            <!-- Stats -->
+                            <div class="grid grid-cols-3 gap-4">
+                                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                                    <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">已索引文档
+                                    </div>
+                                    <div class="text-2xl font-bold text-slate-800" id="kb-stats-docs">0 <span
+                                            class="text-sm font-normal text-slate-400">份</span></div>
+                                </div>
+                                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                                    <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">系统状态
+                                    </div>
+                                    <div class="text-lg font-bold text-emerald-600" id="kb-stats-chunks">Ready</div>
+                                </div>
+                                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                                    <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">最近同步
+                                    </div>
+                                    <div class="text-lg font-bold text-slate-800" id="kb-stats-last-update">-</div>
+                                </div>
+                            </div>
+
+                            <!-- File List -->
+                            <div
+                                class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden min-h-[200px]">
+                                <table class="w-full text-sm text-left">
+                                    <thead
+                                        class="bg-slate-50 border-b border-slate-200 text-xs text-slate-500 uppercase">
+                                        <tr>
+                                            <th class="px-6 py-3 font-medium">文件名</th>
+                                            <th class="px-6 py-3 font-medium">类型</th>
+                                            <th class="px-6 py-3 font-medium">状态</th>
+                                            <th class="px-6 py-3 font-medium text-right">操作</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-100">
+                                        <!-- Dynamic items -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+
+                        <!-- Section: MCP -->
+                        <section id="settings-mcp" class="settings-section space-y-8 fade-in-up hidden">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-xl font-bold text-slate-800 mb-1">Model Context Protocol (MCP)</h3>
+                                    <p class="text-sm text-slate-500">连接外部数据源与工具，扩展 AI 能力边界</p>
+                                </div>
+                                <button onclick="window.openMcpEditor()"
+                                    class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg shadow-sm transition-all flex items-center gap-2 active:scale-95">
+                                    <i class="fas fa-plus"></i> 添加服务
+                                </button>
+                            </div>
+
+                            <!-- Info Box -->
+                            <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-4 items-start">
+                                <div class="text-blue-600 mt-1"><i class="fas fa-plug text-xl"></i></div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-blue-800">什么是 MCP?</h4>
+                                    <p class="text-xs text-blue-600/80 mt-1 leading-relaxed">MCP 是一种开放标准协议。通过配置 MCP
+                                        Server，您可以让 AI 安全地访问本地文件、数据库或远程服务，而无需编写专门的 Tool 代码。</p>
+                                </div>
+                            </div>
+
+                            <!-- Editor Container (Hidden) -->
+                            <div id="mcp-editor-container"
+                                class="hidden bg-white p-6 rounded-2xl border border-blue-500 shadow-md ring-4 ring-blue-500/10 mb-6 transition-all">
+                                <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
+                                    <h4 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                        <i class="fas fa-server text-blue-600"></i> <span id="mcp-editor-title">配置 MCP
+                                            服务</span>
+                                    </h4>
+                                    <button onclick="window.closeMcpEditor()"
+                                        class="text-slate-400 hover:text-slate-600"><i
+                                            class="fas fa-times text-lg"></i></button>
+                                </div>
+
+                                <div class="space-y-5">
+                                    <input type="hidden" id="edit-mcp-id">
+
+                                    <!-- JSON Editor -->
+                                    <div>
+                                        <div class="flex justify-between items-center mb-2">
+                                            <label
+                                                class="block text-xs font-bold text-slate-600 uppercase tracking-wider">Configuration
+                                                (JSON)</label>
+                                            <div class="flex gap-2">
+                                                <button onclick="window.loadMcpTemplate('stdio')"
+                                                    class="text-[10px] text-slate-500 hover:text-blue-600">Stdio
+                                                    Template</button>
+                                                <span class="text-slate-300">|</span>
+                                                <button onclick="window.loadMcpTemplate('sse')"
+                                                    class="text-[10px] text-slate-500 hover:text-blue-600">SSE
+                                                    Template</button>
+                                                <span class="text-slate-300">|</span>
+                                                <button onclick="window.formatJson('edit-mcp-json')"
+                                                    class="text-[10px] text-blue-600 hover:underline font-bold">Format
+                                                    JSON</button>
+                                            </div>
+                                        </div>
+                                        <textarea id="edit-mcp-json" rows="12"
+                                            class="w-full border border-slate-300 rounded-lg p-4 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-900 text-emerald-400 resize-none leading-relaxed"
+                                            placeholder='{
   "name": "filesystem",
   "type": "stdio",
   "command": "npx",
   "args": ["-y", "@modelcontextprotocol/server-filesystem", "./data"],
   "env": {}
 }'></textarea>
-                                    <p class="text-[10px] text-slate-400 mt-2">
-                                        <i class="fas fa-info-circle mr-1"></i>
-                                        请直接粘贴 MCP 服务的完整配置 JSON。支持 <code>stdio</code> 和 <code>sse</code> 两种连接类型。
-                                    </p>
-                                </div>
-
-                                <!-- Actions -->
-                                <div class="pt-4 flex justify-end gap-3 border-t border-slate-100">
-                                    <button onclick="window.saveMcpServer()" class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-lg shadow-md transition-all active:scale-95">
-                                        <i class="fas fa-save mr-2"></i> 保存配置
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- List -->
-                        <div id="mcp-list" class="space-y-4">
-                            <!-- Injected via JS -->
-                            <div id="mcp-list-empty" class="text-center py-12 bg-white rounded-xl border border-dashed border-slate-300">
-                                <div class="w-12 h-12 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-3 text-xl"><i class="fas fa-network-wired"></i></div>
-                                <h4 class="text-slate-600 font-bold text-sm">暂无 MCP 服务</h4>
-                                <p class="text-[10px] text-slate-400 mt-1">点击上方“添加服务”连接外部能力</p>
-                            </div>
-                        </div>
-                    </section>
-
-                    <!-- Section: API Config (Custom Tools) -->
-                    <section id="settings-api" class="settings-section space-y-6 fade-in-up hidden">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h3 class="text-xl font-bold text-slate-800 mb-1">API 工具</h3>
-                                <p class="text-sm text-slate-500">配置 HTTP 接口，系统将自动生成 Python 工具供 AI 调用</p>
-                            </div>
-                            <button id="btn-add-api-tool" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg shadow-sm transition-all flex items-center gap-2 active:scale-95">
-                                <i class="fas fa-plus"></i> 新建工具
-                            </button>
-                        </div>
-
-                        <!-- Info Box -->
-                        <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-4 items-start">
-                            <div class="text-blue-600 mt-1"><i class="fas fa-magic text-xl"></i></div>
-                            <div>
-                                <h4 class="text-sm font-bold text-blue-800">工具配置指南</h4>
-                                <p class="text-xs text-blue-600/80 mt-1 leading-relaxed">此功能允许您将银行内部的数据接口（如企业黑名单查询、实时利率）注册为 AI 可用的工具。配置好 URL 和参数后，AI 助手在遇到相关问题时（如“查询某企业信用”）会自动触发接口调用，实现“所想即所得”的数据获取。</p>
-                            </div>
-                        </div>
-
-                        <!-- Editor Container (Hidden by default) -->
-                        <div id="api-editor-container" class="hidden bg-white p-6 rounded-2xl border border-emerald-500 shadow-md ring-4 ring-emerald-500/10 mb-6 transition-all">
-                            <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
-                                <h4 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                                    <i class="fas fa-hammer text-emerald-600"></i> <span id="api-editor-title">配置新工具</span>
-                                </h4>
-                                <div class="flex items-center gap-3">
-                                    <button onclick="window.toggleCurlImport()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg transition-colors font-medium flex items-center gap-1">
-                                        <i class="fas fa-terminal"></i> cURL 导入
-                                    </button>
-                                    <div class="h-4 w-px bg-slate-300"></div>
-                                    <button id="btn-cancel-api-tool" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times text-lg"></i></button>
-                                </div>
-                            </div>
-                            
-                            <!-- cURL Import Box -->
-                            <div id="curl-import-box" class="hidden mb-6 bg-slate-800 rounded-xl p-4 animate-fade-in-down">
-                                <div class="flex justify-between items-center mb-2">
-                                    <label class="text-xs font-bold text-slate-400 uppercase">粘贴 cURL 命令</label>
-                                    <button onclick="window.parseCurl()" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded transition-colors">解析并填充</button>
-                                </div>
-                                <textarea id="curl-input" rows="3" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-xs font-mono text-emerald-400 focus:outline-none focus:border-emerald-500 resize-none" placeholder="curl -X POST https://api.example.com/v1..."></textarea>
-                            </div>
-                            
-                            <div class="space-y-5">
-                                <input type="hidden" id="edit-api-id">
-                                
-                                <!-- Row 1: Basic Info -->
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    <div class="col-span-1">
-                                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">工具标识 (Name)</label>
-                                        <input type="text" id="edit-api-name" placeholder="e.g. search_enterprise" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-slate-700 bg-slate-50 focus:bg-white">
-                                        <p class="text-[10px] text-slate-400 mt-1">仅允许英文、数字、下划线，作为模型调用ID</p>
-                                    </div>
-                                    <div class="col-span-1">
-                                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">功能描述 (Description)</label>
-                                        <input type="text" id="edit-api-desc" placeholder="简述工具功能，指导模型何时使用" class="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-700">
-                                    </div>
-                                </div>
-
-                                <!-- Row 2: Method + URL -->
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">接口地址 (Endpoint)</label>
-                                    <div class="flex shadow-sm rounded-lg overflow-hidden border border-slate-300 focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500">
-                                        <select id="edit-api-method" class="w-24 bg-slate-100 hover:bg-slate-200 cursor-pointer text-slate-700 font-bold text-xs px-2 py-2.5 border-r border-slate-300 focus:outline-none text-center">
-                                            <option value="GET">GET</option>
-                                            <option value="POST">POST</option>
-                                            <option value="PUT">PUT</option>
-                                            <option value="DELETE">DELETE</option>
-                                        </select>
-                                        <div class="flex-1 relative">
-                                            <input type="text" id="edit-api-url" placeholder="api.example.com/v1/resource" class="w-full h-full px-4 py-2.5 text-sm font-mono text-slate-700 border-none focus:ring-0">
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Row 3: Key-Value Editors -->
-                                <div class="grid grid-cols-1 gap-6">
-                                    <!-- Headers Editor -->
-                                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                                        <div class="flex justify-between items-center mb-3">
-                                            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider">请求头 (Headers)</label>
-                                            <button type="button" onclick="window.addHeaderRow()" class="text-xs bg-white border border-slate-300 hover:border-emerald-500 text-slate-600 hover:text-emerald-600 px-2 py-1 rounded shadow-sm transition-all flex items-center gap-1">
-                                                <i class="fas fa-plus"></i> 添加 Header
-                                            </button>
-                                        </div>
-                                        <div id="headers-container" class="space-y-2">
-                                            <!-- Rows injected by JS -->
-                                        </div>
+                                        <p class="text-[10px] text-slate-400 mt-2">
+                                            <i class="fas fa-info-circle mr-1"></i>
+                                            请直接粘贴 MCP 服务的完整配置 JSON。支持 <code>stdio</code> 和 <code>sse</code> 两种连接类型。
+                                        </p>
                                     </div>
 
-                                    <!-- Parameters Editor -->
-                                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                                        <div class="flex justify-between items-center mb-3">
-                                            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider">输入参数 (Parameters)</label>
-                                            <button type="button" onclick="window.addParamRow()" class="text-xs bg-white border border-slate-300 hover:border-emerald-500 text-slate-600 hover:text-emerald-600 px-2 py-1 rounded shadow-sm transition-all flex items-center gap-1">
-                                                <i class="fas fa-plus"></i> 添加参数
-                                            </button>
-                                        </div>
-                                        
-                                        <!-- Table Header -->
-                                        <div class="grid grid-cols-12 gap-2 mb-2 px-1">
-                                            <div class="col-span-3 text-[10px] text-slate-400 font-bold uppercase tracking-wider">参数名</div>
-                                            <div class="col-span-2 text-[10px] text-slate-400 font-bold uppercase tracking-wider">类型</div>
-                                            <div class="col-span-1 text-[10px] text-slate-400 font-bold uppercase tracking-wider text-center">必填</div>
-                                            <div class="col-span-5 text-[10px] text-slate-400 font-bold uppercase tracking-wider">描述</div>
-                                            <div class="col-span-1"></div>
-                                        </div>
-                                        
-                                        <div id="params-container" class="space-y-2">
-                                            <!-- Rows injected by JS -->
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Row 4: Few-Shot Examples -->
-                                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                                    <div class="flex justify-between items-center mb-3">
-                                        <div>
-                                            <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider">示例提问 (Few-Shot QA)</label>
-                                            <p class="text-[10px] text-slate-400 mt-0.5">列举 1-3 个触发此工具的典型用户提问，增强模型识别能力</p>
-                                        </div>
-                                        <button type="button" onclick="window.addExampleRow()" class="text-xs bg-white border border-slate-300 hover:border-emerald-500 text-slate-600 hover:text-emerald-600 px-2 py-1 rounded shadow-sm transition-all flex items-center gap-1">
-                                            <i class="fas fa-plus"></i> 添加示例
+                                    <!-- Actions -->
+                                    <div class="pt-4 flex justify-end gap-3 border-t border-slate-100">
+                                        <button onclick="window.saveMcpServer()"
+                                            class="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold rounded-lg shadow-md transition-all active:scale-95">
+                                            <i class="fas fa-save mr-2"></i> 保存配置
                                         </button>
                                     </div>
-                                    <div id="examples-container" class="space-y-2">
-                                        <!-- Rows injected by JS -->
+                                </div>
+                            </div>
+
+                            <!-- List -->
+                            <div id="mcp-list" class="space-y-4">
+                                <!-- Injected via JS -->
+                                <div id="mcp-list-empty"
+                                    class="text-center py-12 bg-white rounded-xl border border-dashed border-slate-300">
+                                    <div
+                                        class="w-12 h-12 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-3 text-xl">
+                                        <i class="fas fa-network-wired"></i>
+                                    </div>
+                                    <h4 class="text-slate-600 font-bold text-sm">暂无 MCP 服务</h4>
+                                    <p class="text-[10px] text-slate-400 mt-1">点击上方“添加服务”连接外部能力</p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <!-- Section: API Config (Custom Tools) -->
+                        <section id="settings-api" class="settings-section space-y-6 fade-in-up hidden">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-xl font-bold text-slate-800 mb-1">API 工具</h3>
+                                    <p class="text-sm text-slate-500">配置 HTTP 接口，系统将自动生成 Python 工具供 AI 调用</p>
+                                </div>
+                                <button id="btn-add-api-tool"
+                                    class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium rounded-lg shadow-sm transition-all flex items-center gap-2 active:scale-95">
+                                    <i class="fas fa-plus"></i> 新建工具
+                                </button>
+                            </div>
+
+                            <!-- Info Box -->
+                            <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-4 items-start">
+                                <div class="text-blue-600 mt-1"><i class="fas fa-magic text-xl"></i></div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-blue-800">工具配置指南</h4>
+                                    <p class="text-xs text-blue-600/80 mt-1 leading-relaxed">
+                                        此功能允许您将银行内部的数据接口（如企业黑名单查询、实时利率）注册为 AI 可用的工具。配置好 URL 和参数后，AI
+                                        助手在遇到相关问题时（如“查询某企业信用”）会自动触发接口调用，实现“所想即所得”的数据获取。</p>
+                                </div>
+                            </div>
+
+                            <!-- Editor Container (Hidden by default) -->
+                            <div id="api-editor-container"
+                                class="hidden bg-white p-6 rounded-2xl border border-emerald-500 shadow-md ring-4 ring-emerald-500/10 mb-6 transition-all">
+                                <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-100">
+                                    <h4 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                        <i class="fas fa-hammer text-emerald-600"></i> <span
+                                            id="api-editor-title">配置新工具</span>
+                                    </h4>
+                                    <div class="flex items-center gap-3">
+                                        <button onclick="window.toggleCurlImport()"
+                                            class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg transition-colors font-medium flex items-center gap-1">
+                                            <i class="fas fa-terminal"></i> cURL 导入
+                                        </button>
+                                        <div class="h-4 w-px bg-slate-300"></div>
+                                        <button id="btn-cancel-api-tool" class="text-slate-400 hover:text-slate-600"><i
+                                                class="fas fa-times text-lg"></i></button>
                                     </div>
                                 </div>
 
-                                <!-- Actions -->
-                                <div class="pt-4 flex justify-end gap-3 border-t border-slate-100">
-                                    <button id="btn-save-api-tool" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-lg shadow-md transition-all active:scale-95">
-                                        <i class="fas fa-save mr-2"></i> 保存配置
-                                    </button>
+                                <!-- cURL Import Box -->
+                                <div id="curl-import-box"
+                                    class="hidden mb-6 bg-slate-800 rounded-xl p-4 animate-fade-in-down">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <label class="text-xs font-bold text-slate-400 uppercase">粘贴 cURL 命令</label>
+                                        <button onclick="window.parseCurl()"
+                                            class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded transition-colors">解析并填充</button>
+                                    </div>
+                                    <textarea id="curl-input" rows="3"
+                                        class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-xs font-mono text-emerald-400 focus:outline-none focus:border-emerald-500 resize-none"
+                                        placeholder="curl -X POST https://api.example.com/v1..."></textarea>
                                 </div>
-                            </div>
-                        </div>
 
-                        <!-- Tool List -->
-                        <div id="api-tools-list" class="grid grid-cols-1 gap-4">
-                            <!-- Empty State -->
-                            <div id="api-tools-empty" class="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300">
-                                <div class="w-16 h-16 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
-                                    <i class="fas fa-toolbox"></i>
+                                <div class="space-y-5">
+                                    <input type="hidden" id="edit-api-id">
+
+                                    <!-- Row 1: Basic Info -->
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                        <div class="col-span-1">
+                                            <label
+                                                class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">工具标识
+                                                (Name)</label>
+                                            <input type="text" id="edit-api-name" placeholder="e.g. search_enterprise"
+                                                class="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-slate-700 bg-slate-50 focus:bg-white">
+                                            <p class="text-[10px] text-slate-400 mt-1">仅允许英文、数字、下划线，作为模型调用ID</p>
+                                        </div>
+                                        <div class="col-span-1">
+                                            <label
+                                                class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">功能描述
+                                                (Description)</label>
+                                            <input type="text" id="edit-api-desc" placeholder="简述工具功能，指导模型何时使用"
+                                                class="w-full border border-slate-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-700">
+                                        </div>
+                                    </div>
+
+                                    <!-- Row 2: Method + URL -->
+                                    <div>
+                                        <label
+                                            class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">接口地址
+                                            (Endpoint)</label>
+                                        <div
+                                            class="flex shadow-sm rounded-lg overflow-hidden border border-slate-300 focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500">
+                                            <select id="edit-api-method"
+                                                class="w-24 bg-slate-100 hover:bg-slate-200 cursor-pointer text-slate-700 font-bold text-xs px-2 py-2.5 border-r border-slate-300 focus:outline-none text-center">
+                                                <option value="GET">GET</option>
+                                                <option value="POST">POST</option>
+                                                <option value="PUT">PUT</option>
+                                                <option value="DELETE">DELETE</option>
+                                            </select>
+                                            <div class="flex-1 relative">
+                                                <input type="text" id="edit-api-url"
+                                                    placeholder="api.example.com/v1/resource"
+                                                    class="w-full h-full px-4 py-2.5 text-sm font-mono text-slate-700 border-none focus:ring-0">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Row 3: Key-Value Editors -->
+                                    <div class="grid grid-cols-1 gap-6">
+                                        <!-- Headers Editor -->
+                                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                            <div class="flex justify-between items-center mb-3">
+                                                <label
+                                                    class="block text-xs font-bold text-slate-600 uppercase tracking-wider">请求头
+                                                    (Headers)</label>
+                                                <button type="button" onclick="window.addHeaderRow()"
+                                                    class="text-xs bg-white border border-slate-300 hover:border-emerald-500 text-slate-600 hover:text-emerald-600 px-2 py-1 rounded shadow-sm transition-all flex items-center gap-1">
+                                                    <i class="fas fa-plus"></i> 添加 Header
+                                                </button>
+                                            </div>
+                                            <div id="headers-container" class="space-y-2">
+                                                <!-- Rows injected by JS -->
+                                            </div>
+                                        </div>
+
+                                        <!-- Parameters Editor -->
+                                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                            <div class="flex justify-between items-center mb-3">
+                                                <label
+                                                    class="block text-xs font-bold text-slate-600 uppercase tracking-wider">输入参数
+                                                    (Parameters)</label>
+                                                <button type="button" onclick="window.addParamRow()"
+                                                    class="text-xs bg-white border border-slate-300 hover:border-emerald-500 text-slate-600 hover:text-emerald-600 px-2 py-1 rounded shadow-sm transition-all flex items-center gap-1">
+                                                    <i class="fas fa-plus"></i> 添加参数
+                                                </button>
+                                            </div>
+
+                                            <!-- Table Header -->
+                                            <div class="grid grid-cols-12 gap-2 mb-2 px-1">
+                                                <div
+                                                    class="col-span-3 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                                                    参数名</div>
+                                                <div
+                                                    class="col-span-2 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                                                    类型</div>
+                                                <div
+                                                    class="col-span-1 text-[10px] text-slate-400 font-bold uppercase tracking-wider text-center">
+                                                    必填</div>
+                                                <div
+                                                    class="col-span-5 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                                                    描述</div>
+                                                <div class="col-span-1"></div>
+                                            </div>
+
+                                            <div id="params-container" class="space-y-2">
+                                                <!-- Rows injected by JS -->
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Row 4: Few-Shot Examples -->
+                                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <div>
+                                                <label
+                                                    class="block text-xs font-bold text-slate-600 uppercase tracking-wider">示例提问
+                                                    (Few-Shot QA)</label>
+                                                <p class="text-[10px] text-slate-400 mt-0.5">列举 1-3
+                                                    个触发此工具的典型用户提问，增强模型识别能力</p>
+                                            </div>
+                                            <button type="button" onclick="window.addExampleRow()"
+                                                class="text-xs bg-white border border-slate-300 hover:border-emerald-500 text-slate-600 hover:text-emerald-600 px-2 py-1 rounded shadow-sm transition-all flex items-center gap-1">
+                                                <i class="fas fa-plus"></i> 添加示例
+                                            </button>
+                                        </div>
+                                        <div id="examples-container" class="space-y-2">
+                                            <!-- Rows injected by JS -->
+                                        </div>
+                                    </div>
+
+                                    <!-- Actions -->
+                                    <div class="pt-4 flex justify-end gap-3 border-t border-slate-100">
+                                        <button id="btn-save-api-tool"
+                                            class="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-lg shadow-md transition-all active:scale-95">
+                                            <i class="fas fa-save mr-2"></i> 保存配置
+                                        </button>
+                                    </div>
                                 </div>
-                                <h4 class="text-slate-600 font-bold">暂无自定义工具</h4>
-                                <p class="text-xs text-slate-400 mt-1">点击右上角“新建工具”添加您的第一个 HTTP 接口</p>
                             </div>
-                            <!-- Dynamic Items will be injected here -->
-                        </div>
-                    </section>
-                    
-                    <!-- Section: About -->
-                    <section id="settings-about" class="settings-section hidden">
-                        <h3 class="text-center text-xs font-bold text-slate-300 uppercase tracking-[0.2em] mb-8 select-none flex items-center justify-center gap-4">
-                            <span class="h-px w-12 bg-slate-200"></span>
-                            <span>System Info</span>
-                            <span class="h-px w-12 bg-slate-200"></span>
-                        </h3>
-                        <div class="bg-white p-10 rounded-2xl border border-slate-200 shadow-lg shadow-slate-200/50 text-center space-y-6 max-w-lg mx-auto">
-                            <img src="/static/img/logo.svg" class="w-20 h-20 mx-auto rounded-2xl shadow-md">
-                            <div>
-                                <h4 class="text-2xl font-bold text-slate-800">绿色信贷智能助手</h4>
-                                <p class="text-sm text-slate-500 font-mono mt-1">v1.2.0 (Beta)</p>
+
+                            <!-- Tool List -->
+                            <div id="api-tools-list" class="grid grid-cols-1 gap-4">
+                                <!-- Empty State -->
+                                <div id="api-tools-empty"
+                                    class="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300">
+                                    <div
+                                        class="w-16 h-16 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                                        <i class="fas fa-toolbox"></i>
+                                    </div>
+                                    <h4 class="text-slate-600 font-bold">暂无自定义工具</h4>
+                                    <p class="text-xs text-slate-400 mt-1">点击右上角“新建工具”添加您的第一个 HTTP 接口</p>
+                                </div>
+                                <!-- Dynamic Items will be injected here -->
                             </div>
-                            <p class="text-sm text-slate-500 max-w-sm mx-auto leading-relaxed">
-                                专为绿色金融审计与风险评估设计的智能辅助系统。整合文档解析、RAG 检索与自动化决策支持。
-                            </p>
-                            <div class="pt-6 border-t border-slate-100 flex justify-center space-x-4">
-                                <a href="#" class="text-slate-400 hover:text-emerald-600 transition-colors"><i
-                                        class="fab fa-github text-xl"></i></a>
-                                <a href="#" class="text-slate-400 hover:text-emerald-600 transition-colors"><i
-                                        class="fas fa-book text-xl"></i></a>
+                        </section>
+
+                        <!-- Section: About -->
+                        <section id="settings-about" class="settings-section hidden">
+                            <h3
+                                class="text-center text-xs font-bold text-slate-300 uppercase tracking-[0.2em] mb-8 select-none flex items-center justify-center gap-4">
+                                <span class="h-px w-12 bg-slate-200"></span>
+                                <span>System Info</span>
+                                <span class="h-px w-12 bg-slate-200"></span>
+                            </h3>
+                            <div
+                                class="bg-white p-10 rounded-2xl border border-slate-200 shadow-lg shadow-slate-200/50 text-center space-y-6 max-w-lg mx-auto">
+                                <img src="/static/img/logo.svg" class="w-20 h-20 mx-auto rounded-2xl shadow-md">
+                                <div>
+                                    <h4 class="text-2xl font-bold text-slate-800">绿色信贷智能助手</h4>
+                                    <p class="text-sm text-slate-500 font-mono mt-1">v1.2.0 (Beta)</p>
+                                </div>
+                                <p class="text-sm text-slate-500 max-w-sm mx-auto leading-relaxed">
+                                    专为绿色金融审计与风险评估设计的智能辅助系统。整合文档解析、RAG 检索与自动化决策支持。
+                                </p>
+                                <div class="pt-6 border-t border-slate-100 flex justify-center space-x-4">
+                                    <a href="#" class="text-slate-400 hover:text-emerald-600 transition-colors"><i
+                                            class="fab fa-github text-xl"></i></a>
+                                    <a href="#" class="text-slate-400 hover:text-emerald-600 transition-colors"><i
+                                            class="fas fa-book text-xl"></i></a>
+                                </div>
                             </div>
-                        </div>
-                    </section>
+                        </section>
+                    </div>
                 </div>
-            </div>
             </div>
         </div>
     </div>
@@ -748,11 +1032,15 @@
             <h3 class="text-lg font-bold text-slate-800 mb-2 text-center" id="delete-modal-title">删除会话</h3>
             <p class="text-sm text-slate-500 mb-6 text-center" id="delete-modal-desc">您确定要删除这个会话吗？此操作无法撤销，所有聊天记录都将丢失。
             </p>
-            
+
             <!-- Safety Check Input -->
             <div id="delete-confirm-wrapper" class="hidden mb-6 px-4">
-                <label class="block text-xs text-slate-500 mb-2 text-center">请输入 <span class="font-bold text-red-600 select-none bg-red-50 px-1.5 py-0.5 rounded border border-red-100" id="delete-confirm-match-text">删除所有会话</span> 以确认</label>
-                <input type="text" id="delete-confirm-input" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition-shadow text-center font-bold text-slate-700" placeholder="" autocomplete="off">
+                <label class="block text-xs text-slate-500 mb-2 text-center">请输入 <span
+                        class="font-bold text-red-600 select-none bg-red-50 px-1.5 py-0.5 rounded border border-red-100"
+                        id="delete-confirm-match-text">删除所有会话</span> 以确认</label>
+                <input type="text" id="delete-confirm-input"
+                    class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition-shadow text-center font-bold text-slate-700"
+                    placeholder="" autocomplete="off">
             </div>
             <div class="flex justify-center space-x-3">
                 <button id="cancel-delete-btn"

@@ -7,6 +7,7 @@ class GreenCreditState(TypedDict):
     session_id: str  # 唯一会话ID
     user_query: str  # 用户当前输入
     uploaded_documents: Annotated[list[str], operator.add]  # 累计提取后的文档内容
+    user_id: str | None  # 用户ID (多租户隔离)
 
     # --- 核心实体 ---
     company_name: str | None  # 借款主体

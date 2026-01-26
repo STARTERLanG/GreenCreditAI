@@ -12,3 +12,4 @@ class ChatSession(SQLModel, table=True):
     history: str = Field(default="[]", description="JSON serialized chat history")
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
+    user_id: str | None = Field(default=None, index=True, description="Owner of the session")

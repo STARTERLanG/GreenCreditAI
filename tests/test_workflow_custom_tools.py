@@ -124,4 +124,3 @@ def test_agent_factory_binds_tools():
         assert dynamic_tool.description == "查询股票价格"
         assert dynamic_tool.method == "GET"
         assert "Authorization" in dynamic_tool.headers
-

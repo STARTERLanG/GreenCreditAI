@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
+
 from langchain_core.documents import Document
+
 
 class SplittingStrategy(ABC):
     @abstractmethod

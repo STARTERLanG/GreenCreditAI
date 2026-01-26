@@ -15,6 +15,7 @@ class AgentTool(SQLModel, table=True):
     params: str | None = None  # JSON string
     examples: str | None = None  # JSON string (list)
     enabled: bool = True
+    user_id: str | None = Field(default=None, index=True, description="Owner")
     created_at: int = Field(default_factory=lambda: 0)  # Timestamp
 
 
@@ -28,6 +29,7 @@ class McpServer(SQLModel, table=True):
     args: str | None = None  # JSON string (list)
     env: str | None = None  # JSON string (dict)
     enabled: bool = True
+    user_id: str | None = Field(default=None, index=True, description="Owner")
     created_at: int = Field(default_factory=lambda: 0)
 
 

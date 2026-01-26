@@ -25,14 +25,24 @@ class ConfigService:
             session.commit()
 
     # --- Agent Tool ---
-    def list_tools(self) -> list[AgentTool]:
+    def list_tools(self, user_id: str | None = None) -> list[AgentTool]:
         with Session(engine) as session:
-            return list(session.exec(select(AgentTool)).all())
+            stmt = select(AgentTool)
+            if user_id:
+                stmt = stmt.where(AgentTool.user_id == user_id)
+            return list(session.exec(stmt).all())
 
-    def save_tool(self, tool: AgentTool) -> AgentTool:
+    def save_tool(self, tool: AgentTool, user_id: str | None = None) -> AgentTool:
+        # 强制设置 user_id
+        tool.user_id = user_id
+
         with Session(engine) as session:
             existing = session.get(AgentTool, tool.id)
             if existing:
+                # 权限检查
+                if existing.user_id and existing.user_id != user_id:
+                    raise ValueError("Permission denied")
+
                 # Update fields
                 existing.name = tool.name
                 existing.desc = tool.desc
@@ -52,24 +62,36 @@ class ConfigService:
                 session.refresh(tool)
                 return tool
 
-    def delete_tool(self, tool_id: str) -> bool:
+    def delete_tool(self, tool_id: str, user_id: str | None = None) -> bool:
         with Session(engine) as session:
             tool = session.get(AgentTool, tool_id)
             if tool:
+                # 权限检查
+                if tool.user_id and tool.user_id != user_id:
+                    return False
                 session.delete(tool)
                 session.commit()
                 return True
             return False
 
     # --- MCP Server ---
-    def list_mcp_servers(self) -> list[McpServer]:
+    def list_mcp_servers(self, user_id: str | None = None) -> list[McpServer]:
         with Session(engine) as session:
-            return list(session.exec(select(McpServer)).all())
+            stmt = select(McpServer)
+            if user_id:
+                stmt = stmt.where(McpServer.user_id == user_id)
+            return list(session.exec(stmt).all())
 
-    def save_mcp_server(self, server: McpServer) -> McpServer:
+    def save_mcp_server(self, server: McpServer, user_id: str | None = None) -> McpServer:
+        server.user_id = user_id
+
         with Session(engine) as session:
             existing = session.get(McpServer, server.id)
             if existing:
+                # 权限检查
+                if existing.user_id and existing.user_id != user_id:
+                    raise ValueError("Permission denied")
+
                 existing.name = server.name
                 existing.type = server.type
                 existing.command = server.command
@@ -86,10 +108,13 @@ class ConfigService:
                 session.refresh(server)
                 return server
 
-    def delete_mcp_server(self, server_id: str) -> bool:
+    def delete_mcp_server(self, server_id: str, user_id: str | None = None) -> bool:
         with Session(engine) as session:
             server = session.get(McpServer, server_id)
             if server:
+                # 权限检查
+                if server.user_id and server.user_id != user_id:
+                    return False
                 session.delete(server)
                 session.commit()
                 return True
