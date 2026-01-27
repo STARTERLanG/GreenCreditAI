@@ -5,7 +5,6 @@ from typing import Any
 from langchain_core.messages import AIMessage
 from langchain_core.runnables import RunnableConfig
 
-from app.agents.auditor import auditor_agent
 from app.agents.chat import chat_agent
 from app.agents.policy import policy_agent
 from app.agents.router import router_agent
@@ -70,14 +69,11 @@ async def auditor_node(state: GreenCreditState, config: RunnableConfig) -> dict[
     请先使用工具核实企业背景，然后调用 submit_audit_result 提交结论。
     """
 
-    # 动态构建 Agent (如果有自定义工具)
+    # 动态构建 Agent (确保每次调用都是新鲜的 LLM 实例/客户端上下文)
     custom_tools = state.get("custom_tools")
-    if custom_tools:
-        from app.agents.auditor import get_auditor_agent
+    from app.agents.auditor import get_auditor_agent
 
-        agent = get_auditor_agent(custom_tools)
-    else:
-        agent = auditor_agent
+    agent = get_auditor_agent(custom_tools)
 
     # 恢复标准调用
     res = await agent.ainvoke({"messages": [{"role": "user", "content": user_input}]}, config=config)
@@ -134,7 +130,7 @@ async def policy_enrichment_node(state: GreenCreditState, config: RunnableConfig
     请开始合规性分析。
     """
 
-    # 恢复标准调用
+    # 动态获取 Agent
     res = await policy_agent.ainvoke({"messages": [{"role": "user", "content": user_input}]}, config=config)
 
     final_report = "分析失败"
@@ -152,6 +148,8 @@ async def policy_enrichment_node(state: GreenCreditState, config: RunnableConfig
 async def chat_node(state: GreenCreditState, config: RunnableConfig) -> dict[str, Any]:
     """闲聊智能体节点"""
     from app.services.session_service import session_service
+
+    # 动态获取 Agent (统一模式)
 
     history = session_service.get_chat_history(state["session_id"], limit=10)
     history_text = "\n".join([f"{msg.type}: {msg.content}" for msg in history])

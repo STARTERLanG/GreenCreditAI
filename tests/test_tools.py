@@ -39,7 +39,11 @@ async def test_web_search_tool():
 
         result = await web_search_tool.ainvoke("test query")
 
-        assert result == mock_response
+        assert isinstance(result, list)
+        assert len(result) == 1
+        assert result[0].page_content == "test content"
+        assert result[0].metadata["url"] == "http://example.com"
+        assert "#:~:text=" in result[0].metadata["location"]["text_fragment"]
         mock_tool_instance.ainvoke.assert_called_once_with("test query")
 
 

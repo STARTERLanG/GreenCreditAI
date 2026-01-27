@@ -77,6 +77,23 @@ function updatePageTitle(title) {
     document.title = `绿色信贷智能助手 - ${title || '新对话'}`;
 }
 
+window.scrollToSource = (id) => {
+    // 简单的滚动逻辑，查找包含 Source [id] 的文本块
+    // 由于内容已经渲染，我们需要在页面中查找特定的 Source 标记
+    // 暂时实现为高亮提示
+    const allSources = document.querySelectorAll('.whitespace-pre-wrap');
+    let found = false;
+    allSources.forEach(el => {
+        if (el.innerText.includes(`Source [${id}]`)) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('bg-yellow-100', 'transition-colors', 'duration-500');
+            setTimeout(() => el.classList.remove('bg-yellow-100'), 2000);
+            found = true;
+        }
+    });
+    if (!found) window.showToast(`来源 [${id}] 未在当前视图中找到`, 'info');
+};
+
 function getFileCardHtml(hash, name) {
     return `
         <div onclick="event.stopPropagation(); window.openPreview('${hash}', '${name}')" class="group flex items-center bg-white/80 border border-emerald-100 rounded-lg p-2 mb-2 shadow-sm w-fit max-w-[200px] cursor-pointer hover:bg-emerald-50 transition-colors select-none">
@@ -96,11 +113,13 @@ let sidebarWidth = 250;
 let pendingRenameId = null;
 let pendingDeleteId = null;
 let pendingFiles = [];
+let abortController = null;
 
 // --- 3. DOM Elements ---
 const dom = {
     input: document.getElementById('user-input'),
     sendBtn: document.getElementById('send-btn'),
+    optimizeBtn: document.getElementById('optimize-btn'),
     chatWindow: document.getElementById('chat-window'),
     fileInput: document.getElementById('file-upload'),
     uploadBtn: document.getElementById('upload-btn'),
@@ -1771,9 +1790,33 @@ if (dom.newChatBtn) {
 
 if (dom.sendBtn) {
     dom.sendBtn.onclick = async () => {
+        // --- STOP LOGIC ---
+        if (isGenerating) {
+            if (abortController) {
+                console.log("[Stop] User aborted generation");
+                abortController.abort();
+                abortController = null;
+            }
+            // Rapid feedback
+            window.showToast("已停止生成", "info");
+            dom.sendBtn.innerHTML = '<i class="fas fa-paper-plane text-lg"></i>';
+            return;
+        }
+
+        // --- SEND LOGIC ---
         const message = dom.input.value.trim();
-        if ((!message && pendingFiles.length === 0) || isGenerating) return;
-        isGenerating = true; dom.sendBtn.disabled = true; dom.input.value = '';
+        if ((!message && pendingFiles.length === 0)) return;
+
+        // Init State
+        isGenerating = true;
+        abortController = new AbortController();
+
+        // Update UI: Stop Icon, Enable Button
+        dom.sendBtn.innerHTML = '<i class="fas fa-stop text-lg text-red-500"></i>';
+        dom.sendBtn.disabled = false;
+
+        dom.input.value = '';
+        if (window.autoResizeInput && dom.input) window.autoResizeInput(dom.input);
 
         const currentFiles = [...pendingFiles];
         renderMessage(message, 'user', true, currentFiles);
@@ -1816,6 +1859,7 @@ if (dom.sendBtn) {
 
             const response = await fetch('/api/v1/chat/completions', {
                 method: 'POST', headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+                signal: abortController ? abortController.signal : null,
                 body: JSON.stringify({
                     message: message,
                     session_id: currentSessionId,
@@ -1943,8 +1987,23 @@ if (dom.sendBtn) {
                 }
             }
             await loadSessions();
-        } catch (error) { aiBubble.innerHTML = `<span class="text-red-500">连接异常</span>`; }
-        finally { isGenerating = false; dom.sendBtn.disabled = false; dom.input.focus(); }
+        } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log("[Stop] Generation stopped by user");
+                aiBubble.querySelector('.typing-loader-container')?.remove();
+                // Optional: Add a small note in the chat bubble
+                aiBubble.innerHTML += `<div class="text-slate-400 text-xs mt-2 italic flex items-center gap-1"><i class="fas fa-stop-circle"></i> 已手动停止生成</div>`;
+            } else {
+                aiBubble.innerHTML = `<span class="text-red-500">连接异常</span>`;
+            }
+        }
+        finally {
+            isGenerating = false;
+            dom.sendBtn.disabled = false;
+            dom.sendBtn.innerHTML = '<i class="fas fa-paper-plane text-lg"></i>';
+            dom.input.focus();
+            abortController = null;
+        }
     };
 }
 
@@ -2090,3 +2149,125 @@ window.onload = async () => {
 function fillInput(text) { if (dom.input) { dom.input.value = text; dom.input.focus(); } }
 window.fillInput = fillInput;
 dom.input.onkeypress = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); dom.sendBtn.click(); } };
+// --- Input Optimization Logic ---
+function initOptimization() {
+    const btn = document.getElementById('optimize-btn');
+    // Also grab input dynamically to be safe
+    const inputEl = document.getElementById('user-input');
+
+    if (btn && inputEl) {
+        console.log("[Optimize] Button found, initializing handler.");
+
+        btn.onclick = async (e) => {
+            console.log("[Optimize] Clicked.");
+            // Prevent event bubbling just in case
+            e.preventDefault();
+            e.stopPropagation();
+
+            const text = inputEl.value.trim();
+            if (!text) {
+                window.showToast("请输入需要优化的内容", "info");
+                return;
+            }
+
+            const originalIcon = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin text-lg"></i>';
+
+            try {
+                console.log("[Optimize] Sending request...");
+                const res = await fetch('/api/v1/optimization/optimize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...getAuthHeaders()
+                    },
+                    body: JSON.stringify({ input: text })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    inputEl.value = data.optimized_input;
+                    window.showToast("输入已优化", "success");
+                    inputEl.classList.add('bg-emerald-50');
+                    if (window.autoResizeInput) window.autoResizeInput(inputEl);
+                    setTimeout(() => inputEl.classList.remove('bg-emerald-50'), 500);
+                } else {
+                    console.error("[Optimize] Server error:", res.status);
+                    window.showToast("优化失败，请稍后重试", "error");
+                }
+            } catch (err) {
+                console.error("[Optimize] Network error:", err);
+                window.showToast("网络错误", "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalIcon;
+                // Focus will also trigger resize via input listeners if we were relying on that, 
+                // but explicit call is better.
+                inputEl.focus();
+                // Ensure resize handles focus properly
+                if (window.autoResizeInput) window.autoResizeInput(inputEl);
+            }
+        };
+    } else {
+        console.warn("[Optimize] Button or Input not found in DOM.");
+    }
+}
+
+// Try to init immediately (if defer) and also on load
+initOptimization();
+window.addEventListener('load', initOptimization);
+
+// --- Auto-Resize Logic ---
+function autoResizeInput(element) {
+    if (!element) return;
+
+    // Reset height to allow shrinkage
+    element.style.height = '56px';
+
+    // Calculate new height, capped at max-h-48 (192px)
+    // 56px is the base min-height defined in HTML
+    const newHeight = Math.max(56, element.scrollHeight);
+
+    element.style.height = `${newHeight}px`;
+
+    // Optional: Toggle scrollbar if content exceeds max height
+    if (element.scrollHeight > 192) {
+        element.style.overflowY = 'auto'; // allow scroll
+    } else {
+        element.style.overflowY = 'hidden'; // hide scroll
+    }
+}
+
+// Bind events
+if (dom.input) {
+    // Initial resize check
+    autoResizeInput(dom.input);
+
+    dom.input.addEventListener('input', function () {
+        autoResizeInput(this);
+    });
+
+    // Handle paste events
+    dom.input.addEventListener('paste', function () {
+        setTimeout(() => autoResizeInput(this), 0);
+    });
+
+    // Also resize on window resize in case of layout shifts
+    window.addEventListener('resize', () => autoResizeInput(dom.input));
+}
+
+// Enhance fillInput to trigger resize
+const originalFillInput = window.fillInput;
+window.fillInput = function (text) {
+    if (originalFillInput) originalFillInput(text);
+    // Trigger resize after value update
+    if (dom.input) {
+        // Create synthetic input event to trigger any other listeners if needed
+        // But calling autoResize directly is safer here
+        autoResizeInput(dom.input);
+    }
+};
+
+// Also export for use in optimization callback
+window.autoResizeInput = autoResizeInput;

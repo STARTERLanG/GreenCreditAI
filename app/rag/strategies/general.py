@@ -12,6 +12,6 @@ class GeneralRecursiveStrategy(SplittingStrategy):
             length_function=len,
         )
 
-    def split(self, text: str, metadata: dict) -> list[Document]:
-        chunks = self.splitter.split_text(text)
-        return [Document(page_content=chunk, metadata=metadata) for chunk in chunks]
+    def split(self, documents: list[Document]) -> list[Document]:
+        # split_documents automatically preserves and propagates metadata/page_content
+        return self.splitter.split_documents(documents)

@@ -1,7 +1,11 @@
 import sqlite3
 from pathlib import Path
 
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# 强制加载环境变量并覆盖系统设置，确保直连生效
+load_dotenv(override=True)
 
 # 检查 SQLite 版本
 if sqlite3.sqlite_version < "3.35.0":
@@ -34,6 +38,7 @@ class Settings(BaseSettings):
 
     # Models
     MODEL_ROUTER_NAME: str = "qwen-turbo"
+    MODEL_FAST_NAME: str = "qwen-turbo"
     MODEL_EXPERT_NAME: str = "qwen-max"
     EMBEDDING_MODEL_NAME: str = "text-embedding-v3"
 

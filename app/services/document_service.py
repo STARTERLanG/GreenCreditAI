@@ -1,8 +1,10 @@
 import hashlib
+import json
 import shutil
 from pathlib import Path
 
 from fastapi import UploadFile
+from langchain_core.documents import Document
 from sqlmodel import Session, select
 
 from app.core.config import settings
@@ -49,17 +51,35 @@ class DocumentService:
 
                 logger.info(f"Indexing file {file_record.filename}...")
 
+                # 反序列化 Document 列表
+                try:
+                    data = json.loads(file_record.content)
+                    # Handle legacy string content (backward compatibility)
+                    if isinstance(data, str):
+                        # Wrap legacy string content in a Document
+                        parsed_docs = [Document(page_content=data, metadata={"source": file_record.filename})]
+                    else:
+                        # Reconstruct Document objects
+                        parsed_docs = [Document(**d) for d in data]
+                except json.JSONDecodeError:
+                    # Fallback for plain text content
+                    parsed_docs = [
+                        Document(page_content=file_record.content, metadata={"source": file_record.filename})
+                    ]
+
                 # 策略选择 (未来可根据文件类型选择不同策略)
                 strategy = self.default_strategy
 
-                # 执行切分
-                documents = strategy.split(
-                    file_record.content, metadata={"file_hash": file_hash, "filename": file_record.filename}
-                )
+                # 执行切分 (Strategy now accepts List[Document])
+                documents = strategy.split(parsed_docs)
+
+                # Update file_hash and filename metadata for all chunks if not present or just ensure consistency
+                for doc in documents:
+                    doc.metadata["file_hash"] = file_hash
+                    doc.metadata["filename"] = file_record.filename
 
                 # 存入向量库
                 vector_store.add_documents(documents, user_id=user_id)
-
                 # 更新状态：完成
                 file_record.status = FileStatus.COMPLETED
                 file_record.indexed = True  # 保持兼容性
@@ -75,10 +95,7 @@ class DocumentService:
                 session.add(file_record)
                 session.commit()
 
-    async def process_file(self, file: UploadFile, user_id: str | None = None) -> tuple[str, str, Path]:
-        """
-        处理上传文件 (同步解析 + 设置异步索引任务)
-        """
+    async def process_file(self, file: UploadFile, user_id: str | None = None, background_tasks=None) -> dict:
         temp_path = self.upload_dir / f"temp_{file.filename}"
         try:
             with temp_path.open("wb") as buffer:
@@ -94,10 +111,29 @@ class DocumentService:
                     temp_path.unlink()
                     content = cached_file.content
                 else:
-                    logger.info("Cache MISS. Parsing file...")
-                    content = parse_file(temp_path)
+                    logger.info(f"Scanning file: {file.filename}")
+                    try:
+                        docs = await parse_file(temp_path)
+                        logger.info(f"Parsed {len(docs)} documents from {file.filename}")
 
-                    new_cache = FileParsingCache(
+                        # 序列化兼容性处理 (Pydantic V1/V2)
+                        docs_dicts = []
+                        for d in docs:
+                            if hasattr(d, "model_dump"):
+                                docs_dicts.append(d.model_dump())
+                            elif hasattr(d, "dict"):
+                                docs_dicts.append(d.dict())
+                            else:
+                                docs_dicts.append({"page_content": d.page_content, "metadata": d.metadata})
+
+                        content = json.dumps(docs_dicts, ensure_ascii=False)
+                        logger.info(f"Serialized content size: {len(content)} chars")
+
+                    except Exception as e:
+                        logger.exception(f"Failed to process file {file.filename}")
+                        raise e
+
+                    cached_file = FileParsingCache(
                         file_hash=file_hash,
                         filename=file.filename,
                         content=content,
@@ -107,7 +143,7 @@ class DocumentService:
                         indexed=False,
                         user_id=user_id,
                     )
-                    session.add(new_cache)
+                    session.add(cached_file)
                     session.commit()
 
                     if not final_path.exists():
@@ -115,12 +151,21 @@ class DocumentService:
                     else:
                         temp_path.unlink()
 
+                # 无论是否命中缓存，如果状态不是 COMPLETED，都可以尝试加入索引队列
+                if cached_file.status in [FileStatus.PENDING, FileStatus.FAILED] and background_tasks:
+                    background_tasks.add_task(self.index_document_task, file_hash, user_id)
+
                 UPLOAD_CACHE[file_hash] = {
                     "content": content,
                     "filename": file.filename,
                     "path": final_path,
                 }
-                return content, file_hash, final_path
+                return {
+                    "filename": file.filename,
+                    "status": "success",
+                    "message": "File processed and queued for indexing",
+                    "file_hash": file_hash,
+                }
 
         finally:
             file.file.close()
@@ -161,7 +206,21 @@ class DocumentService:
         if not kb_dir.exists():
             kb_dir.mkdir(parents=True)
 
-        supported_extensions = {".pdf", ".docx", ".txt", ".md", ".xlsx", ".pptx"}
+        supported_extensions = {
+            ".pdf",
+            ".docx",
+            ".doc",
+            ".xlsx",
+            ".xls",
+            ".pptx",
+            ".ppt",
+            ".txt",
+            ".md",
+            ".json",
+            ".png",
+            ".jpg",
+            ".jpeg",
+        }
         files = [f for f in kb_dir.glob("**/*") if f.is_file() and f.suffix.lower() in supported_extensions]
 
         results = []
@@ -170,7 +229,20 @@ class DocumentService:
             with Session(engine) as session:
                 cached_file = session.get(FileParsingCache, file_hash)
                 if not cached_file:
-                    content = parse_file(file_path)
+                    docs = await parse_file(file_path)
+
+                    # 统一序列化逻辑
+                    docs_dicts = []
+                    for d in docs:
+                        if hasattr(d, "model_dump"):
+                            docs_dicts.append(d.model_dump())
+                        elif hasattr(d, "dict"):
+                            docs_dicts.append(d.dict())
+                        else:
+                            docs_dicts.append({"page_content": d.page_content, "metadata": d.metadata})
+
+                    content = json.dumps(docs_dicts, ensure_ascii=False)
+
                     cached_file = FileParsingCache(
                         file_hash=file_hash,
                         filename=file_path.name,

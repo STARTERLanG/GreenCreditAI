@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, UploadFile, status
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlmodel import Session
 
@@ -23,25 +24,27 @@ class UploadResponse(BaseModel):
 
 @router.post("/upload")
 async def upload_file(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     current_user: Annotated[User, Depends(deps.get_current_user)] = None,
 ):
-    """上传文件并进行解析"""
-    if not file.filename.endswith((".pdf", ".docx", ".txt", ".md")):
+    """上传文件并进行解析与异步索引"""
+    allowed_extensions = (".pdf", ".docx", ".doc", ".xlsx", ".xls", ".pptx", ".ppt", ".txt", ".md", ".json")
+    if not file.filename.lower().endswith(allowed_extensions):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Unsupported file type. Only PDF, DOCX, TXT, and MD files are allowed.",
+            detail=f"Unsupported file type. Allowed: {', '.join(allowed_extensions)}",
         )
     try:
-        # 读取文件内容
-        content = await file.read()
-
+        # 直接传递 UploadFile 对象，让 service 处理保存、哈希和进度排期
         result = await document_service.process_file(
-            filename=file.filename, content=content, user_id=current_user.id if current_user else None
+            file, user_id=current_user.id if current_user else None, background_tasks=background_tasks
         )
         return result
     except Exception as e:
-        # logger.exception(f"Upload failed: {e}") # Assuming logger is defined elsewhere
+        from app.core.logging import logger
+
+        logger.exception(f"Upload failed: {e}")
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
